@@ -694,8 +694,11 @@ function setSyncState(state) {
 async function loadDB() {
   try {
     setSyncState('syncing');
-    const data = await apiGet();
-    // _noBin = JSONBIN_BIN_ID pas encore configuré — on démarre avec DB vide
+    // Timeout de 5s — si l'API ne répond pas, on passe quand même
+    const data = await Promise.race([
+      apiGet(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+    ]);
     DB = data._noBin ? { cards: [], users: {}, adminPass: 'admin123' } : data;
     if (!DB.cards) DB.cards = [];
     if (!DB.users) DB.users = {};
@@ -749,7 +752,6 @@ function showScreen(name) {
 }
 
 async function init() {
-  // Réinitialise l'état du loading
   document.getElementById('loading-text').textContent = 'Connexion au serveur...';
   document.getElementById('loading-spinner').style.display = '';
   document.getElementById('loading-retry').style.display = 'none';
@@ -757,22 +759,12 @@ async function init() {
 
   const ok = await loadDB();
 
+  // Dans tous les cas on passe au login — jamais de blocage
   if (!ok) {
-    // FIX PRINCIPAL : on ne bloque plus sur l'écran de chargement
-    // On affiche un bouton retry et on passe quand même au login en mode hors-ligne
-    document.getElementById('loading-text').textContent = '⚠️ Impossible de joindre le serveur.';
-    document.getElementById('loading-spinner').style.display = 'none';
-    document.getElementById('loading-retry').style.display = '';
-
-    // On attend 2s puis on passe au login en mode hors-ligne
-    setTimeout(() => {
-      document.getElementById('offline-banner').classList.add('visible');
-      showScreen('login');
-    }, 2000);
-    return;
+    document.getElementById('offline-banner').classList.add('visible');
+  } else {
+    document.getElementById('offline-banner').classList.remove('visible');
   }
-
-  document.getElementById('offline-banner').classList.remove('visible');
   showScreen('login');
 }
 
