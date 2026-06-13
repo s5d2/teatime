@@ -1038,9 +1038,6 @@ async function openPack() {
   if (packOpening) return;
   packOpening = true;
 
-  // Refresh cartes pour avoir les dernières ajoutées par l'admin
-  await loadDB();
-
   const ud    = getUserData(currentUser);
   checkTimer(ud);
   const cards = getCards();
@@ -1243,9 +1240,10 @@ async function addCard() {
     if (saved) {
       card.id = saved.id;
     } else {
-      // Mode hors-ligne : id temporaire
-      card.id = Date.now();
-      showToast('⚠️ Hors-ligne — carte ajoutée localement');
+      btn.disabled    = false;
+      btn.textContent = 'Ajouter la carte';
+      showToast('❌ Erreur Supabase — carte non sauvegardée. Vérifie la connexion.');
+      return;
     }
 
     DB.cards.push(card);
