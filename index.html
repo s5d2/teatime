@@ -1283,13 +1283,13 @@ async function openPack() {
     if (c) { drawn.push(c); drawnNames.add(c.name + '_' + c.rarity); }
   }
 
-  // Phase 2 : si moins de 3 cartes, compléter avec des doublons (cartes déjà possédées)
+  // Phase 2 : si moins de 3 cartes, compléter avec des doublons UNIQUES dans ce pack
   if (drawn.length < 3) {
-    const dupePool = cards.filter(c => !drawnNames.has(c.name + '_' + c.rarity));
-    const dupeDrawn = new Set(drawnNames);
+    // drawnNames contient déjà les cartes tirées en phase 1
+    // weightedPick exclut automatiquement drawnNames, donc jamais deux fois la même
     for (let i = drawn.length; i < 3; i++) {
-      const c = weightedPick(dupePool, dupeDrawn);
-      if (c) { drawn.push(c); dupeDrawn.add(c.name + '_' + c.rarity); }
+      const c = weightedPick(cards, drawnNames);
+      if (c) { drawn.push(c); drawnNames.add(c.name + '_' + c.rarity); }
     }
   }
 
