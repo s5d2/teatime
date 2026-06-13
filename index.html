@@ -758,7 +758,7 @@
     <div class="page active" id="page-packs">
       <div class="pack-hero">
         <h2>Ouvre tes packs ✦</h2>
-        <p>5 cartes par pack · Rare, Épique, Légendaire ou Mythique</p>
+        <p>3 cartes par pack · Rare, Épique, Légendaire ou Mythique</p>
         <div class="odds-row">
           <span class="odds-chip rare">Rare 62%</span>
           <span class="odds-chip epique">Épique 22%</span>
@@ -1214,7 +1214,7 @@ async function openPack() {
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 5 * 60 * 1000;
 
   const drawn = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 3; i++) {
     const c = weightedPick(cards);
     if (c) drawn.push(c);
   }
@@ -1295,10 +1295,6 @@ function makeCardEl(c, count) {
       <div class="card-name">${escapeHtml(c.name || '?')}</div>
       ${c.role ? `<div class="card-role">${escapeHtml(c.role)}</div>` : ''}
       ${c.desc ? `<div class="card-desc">${escapeHtml(c.desc)}</div>` : ''}
-    </div>
-    <div class="card-stats">
-      <div class="card-stat"><span class="stat-icon">⚔️</span>${pwr}</div>
-      <div class="card-stat"><span class="stat-icon">🛡️</span>${lck}</div>
     </div>
   `;
   return div;
