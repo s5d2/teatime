@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeaMasters</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #080810;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --surface3: #22222e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f0f4;
+    --muted: #7a7a90;
+    --rare: #4a9eff;
+    --epique: #b06bff;
+    --legendaire: #ffb830;
+    --mythique: #ff2d55;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(74,158,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 0%, rgba(176,107,255,0.04) 0%, transparent 60%);
+  }
+
+  h1, h2, h3 { font-family: 'Syne', sans-serif; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LOADING SCREEN */
+  #screen-loading {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .loading-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, #b06bff 60%, #4a9eff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .loading-spinner {
+    width: 36px; height: 36px;
+    border: 3px solid rgba(176,107,255,0.15);
+    border-top-color: #b06bff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--muted); }
+
+  /* SETUP SCREEN */
+  #screen-setup {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+  #screen-setup.active { display: flex; }
+  .setup-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .setup-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 0.5rem; }
+  .setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.6; }
+  .setup-step { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom: 0.75rem; font-size: 13px; }
+  .setup-step strong { color: var(--text); display: block; margin-bottom: 4px; }
+  .setup-step a { color: var(--epique); text-decoration: none; }
+  .setup-step a:hover { text-decoration: underline; }
+  .setup-step code { background: rgba(176,107,255,0.12); border: 1px solid rgba(176,107,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 12px; color: #d4a0ff; }
+  .setup-fields { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
+
+  /* LOGIN */
+  #screen-login {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  #screen-login.active { display: flex; }
+  #screen-login::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, rgba(176,107,255,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .login-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, #b06bff 60%, #4a9eff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+  }
+  .login-tagline { font-size: 13px; color: var(--muted); text-align: center; letter-spacing: 0.5px; }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+
+  .form-label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; margin-bottom: 6px; display: block; }
+  .form-row { display: flex; flex-direction: column; }
+
+  .admin-toggle { font-size: 11px; color: var(--border2); text-align: right; cursor: pointer; user-select: none; transition: color 0.2s; margin-top: -4px; }
+  .admin-toggle:hover { color: var(--muted); }
+  .admin-pass-row { display: none; flex-direction: column; }
+  .admin-pass-row.visible { display: flex; }
+
+  input[type=text], input[type=password], input[type=number], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: rgba(176,107,255,0.5);
+    box-shadow: 0 0 0 3px rgba(176,107,255,0.08);
+  }
+  select option { background: #222; }
+  textarea { resize: vertical; min-height: 70px; }
+
+  button {
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 16px;
+    transition: all 0.15s;
+  }
+  button:hover { background: var(--surface3); border-color: rgba(255,255,255,0.2); }
+  button:active { opacity: 0.8; transform: scale(0.99); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #4a9eff 100%);
+    color: #fff;
+    border-color: transparent;
+    width: 100%;
+    padding: 13px;
+    font-weight: 600;
+    font-size: 15px;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #8b47ff 0%, #5aaeff 100%); box-shadow: 0 4px 28px rgba(124,58,237,0.5); }
+
+  .btn-danger { background: rgba(255,45,85,0.1); border-color: rgba(255,45,85,0.3); color: #ff6b85; }
+  .btn-danger:hover { background: rgba(255,45,85,0.18); }
+
+  .error-msg { font-size: 12px; color: #ff6b85; text-align: center; min-height: 16px; }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 58px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,8,16,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, #fff 0%, #b06bff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .nav-tabs { display: flex; gap: 2px; }
+  .nav-tab { background: transparent; border: none; color: var(--muted); font-size: 13px; padding: 6px 14px; border-radius: var(--radius-sm); font-weight: 500; transition: all 0.15s; }
+  .nav-tab:hover { background: var(--surface2); color: var(--text); }
+  .nav-tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .nav-username { font-size: 12px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; }
+  .btn-logout { font-size: 12px; padding: 5px 10px; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-xs); }
+
+  /* MAIN */
+  .main { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PACK PAGE */
+  .pack-hero { text-align: center; padding: 2.5rem 0 1.5rem; }
+  .pack-hero h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .pack-hero p { color: var(--muted); font-size: 14px; margin-bottom: 0.75rem; }
+
+  .odds-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .odds-chip { font-size: 11px; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; }
+  .odds-chip.rare { background: rgba(74,158,255,0.1); color: #7ec8ff; border-color: rgba(74,158,255,0.25); }
+  .odds-chip.epique { background: rgba(176,107,255,0.1); color: #d4a0ff; border-color: rgba(176,107,255,0.25); }
+  .odds-chip.legendaire { background: rgba(255,184,48,0.1); color: #ffd070; border-color: rgba(255,184,48,0.25); }
+  .odds-chip.mythique { background: rgba(255,45,85,0.1); color: #ff8099; border-color: rgba(255,45,85,0.3); }
+
+  .packs-info { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 1.5rem 0; flex-wrap: wrap; }
+  .info-chip { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 7px 16px; font-size: 13px; color: var(--muted); }
+  .info-chip strong { color: var(--text); font-weight: 600; }
+
+  .pack-wrap { display: flex; justify-content: center; margin: 0 auto 2rem; }
+
+  .pack-visual {
+    width: 140px;
+    height: 196px;
+    border-radius: 20px;
+    border: 1px solid rgba(176,107,255,0.3);
+    background: linear-gradient(160deg, #1a0b35 0%, #0e0820 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 40px rgba(176,107,255,0.2), 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .pack-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, rgba(176,107,255,0.25) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .pack-visual::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(transparent 0deg, rgba(176,107,255,0.05) 60deg, transparent 120deg);
+    animation: packSpin 6s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes packSpin { to { transform: rotate(360deg); } }
+  .pack-visual:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 0 60px rgba(176,107,255,0.35), 0 16px 40px rgba(0,0,0,0.6); }
+  .pack-visual:active { transform: scale(0.97); }
+  .pack-visual.empty { opacity: 0.3; cursor: not-allowed; }
+  .pack-visual.empty:hover { transform: none; box-shadow: 0 0 40px rgba(176,107,255,0.2), 0 8px 32px rgba(0,0,0,0.5); }
+  .pack-icon { font-size: 42px; user-select: none; position: relative; z-index: 1; }
+  .pack-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: rgba(176,107,255,0.8); letter-spacing: 2px; text-transform: uppercase; position: relative; z-index: 1; }
+
+  .reveal-section { display: none; margin-top: 2.5rem; }
+  .reveal-section.visible { display: block; }
+  .reveal-label { font-size: 11px; color: var(--muted); margin-bottom: 16px; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+  .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 2rem; }
+
+  /* CARD */
+  .card {
+    border-radius: 18px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    text-align: center;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 3/4.2;
+    min-height: 210px;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-6px) scale(1.02); }
+
+  .card.rare { background: linear-gradient(160deg, #0d2855 0%, #081a3d 55%, #040e24 100%); border-color: rgba(74,158,255,0.4); box-shadow: 0 4px 20px rgba(74,158,255,0.15); }
+  .card.rare:hover { box-shadow: 0 8px 40px rgba(74,158,255,0.3); }
+  .card.epique { background: linear-gradient(160deg, #200850 0%, #130330 55%, #0a0220 100%); border-color: rgba(176,107,255,0.45); box-shadow: 0 4px 20px rgba(176,107,255,0.18); }
+  .card.epique:hover { box-shadow: 0 8px 40px rgba(176,107,255,0.35); }
+  .card.legendaire { background: linear-gradient(160deg, #2a1500 0%, #1a0c00 55%, #0d0600 100%); border-color: rgba(255,184,48,0.5); box-shadow: 0 4px 20px rgba(255,184,48,0.2); }
+  .card.legendaire:hover { box-shadow: 0 8px 40px rgba(255,184,48,0.4); }
+
+  /* MYTHIQUE */
+  .card.mythique {
+    background: linear-gradient(160deg, #2a0515 0%, #1a020c 55%, #0d0108 100%);
+    box-shadow: 0 4px 24px rgba(255,45,85,0.25);
+    border-color: transparent;
+    position: relative;
+  }
+  .mythique-border {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, #ff2d55 0%, #ff6b35 25%, #ffb830 50%, #ff6b35 75%, #ff2d55 100%);
+    background-size: 300% 300%;
+    animation: mythBorderAnim 3s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    z-index: 1;
+    pointer-events: none;
+  }
+  @keyframes mythBorderAnim { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  .card.mythique:hover { box-shadow: 0 12px 50px rgba(255,45,85,0.5); transform: translateY(-8px) scale(1.03); }
+
+  .card-shine { position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: 18px; }
+  .card.rare .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(120,200,255,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(74,158,255,0.1) 0%, transparent 50%); }
+  .card.epique .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(220,140,255,0.35) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(176,107,255,0.12) 0%, transparent 50%); }
+  .card.legendaire .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(255,240,120,0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(255,200,50,0.15) 0%, transparent 50%); }
+  .card.mythique .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(255,100,120,0.45) 0%, transparent 55%), radial-gradient(ellipse at 75% 85%, rgba(255,107,53,0.25) 0%, transparent 55%); animation: mythShine 4s ease-in-out infinite; }
+  @keyframes mythShine { 0%,100%{opacity:1} 50%{opacity:0.55} }
+
+  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: 18px; }
+  .star-particle { position: absolute; border-radius: 50%; background: #fff; animation: starFloat var(--dur, 3s) ease-in-out infinite; animation-delay: var(--delay, 0s); opacity: 0; }
+  @keyframes starFloat { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:1} 80%{opacity:0.8} 100%{transform:translateY(-55px) scale(1.5);opacity:0} }
+
+  .card-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 0; position: relative; z-index: 5; }
+
+  .rarity-badge { font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; }
+  .card.rare .rarity-badge { background: rgba(74,158,255,0.15); color: #7ec8ff; border-color: rgba(74,158,255,0.35); }
+  .card.epique .rarity-badge { background: rgba(176,107,255,0.15); color: #d4a0ff; border-color: rgba(176,107,255,0.4); }
+  .card.legendaire .rarity-badge { background: rgba(255,184,48,0.15); color: #ffd070; border-color: rgba(255,184,48,0.4); }
+  .card.mythique .rarity-badge { background: linear-gradient(135deg, rgba(255,45,85,0.2), rgba(255,107,53,0.2)); color: #ff8099; border-color: rgba(255,45,85,0.5); text-shadow: 0 0 8px rgba(255,45,85,0.5); }
+
+  .card-star { font-size: 15px; opacity: 0.55; color: #fff; line-height: 1; position: relative; z-index: 5; }
+  .card.legendaire .card-star { color: #ffd070; opacity: 1; font-size: 17px; }
+  .card.mythique .card-star { color: #ff4466; opacity: 1; font-size: 17px; text-shadow: 0 0 10px rgba(255,45,85,0.8), 0 0 20px rgba(255,45,85,0.4); animation: starPulse 2s ease-in-out infinite; }
+  @keyframes starPulse { 0%,100%{text-shadow:0 0 10px rgba(255,45,85,0.8),0 0 20px rgba(255,45,85,0.4)} 50%{text-shadow:0 0 18px rgba(255,45,85,1),0 0 36px rgba(255,45,85,0.7)} }
+
+  .card-avatar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; position: relative; z-index: 5; }
+  .card-avatar { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.35); color: #fff; transition: transform 0.2s; }
+  .card:hover .card-avatar { transform: scale(1.06); }
+  .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .card.rare .card-avatar { border-color: rgba(74,158,255,0.6); box-shadow: 0 0 12px rgba(74,158,255,0.25); }
+  .card.epique .card-avatar { border-color: rgba(176,107,255,0.6); box-shadow: 0 0 12px rgba(176,107,255,0.3); }
+  .card.legendaire .card-avatar { border-color: rgba(255,184,48,0.7); box-shadow: 0 0 14px rgba(255,184,48,0.3); }
+  .card.mythique .card-avatar { border-color: rgba(255,45,85,0.7); box-shadow: 0 0 16px rgba(255,45,85,0.4), 0 0 32px rgba(255,45,85,0.15); animation: avatarMythique 3s ease-in-out infinite; }
+  @keyframes avatarMythique { 0%,100%{box-shadow:0 0 16px rgba(255,45,85,0.4),0 0 32px rgba(255,45,85,0.15)} 50%{box-shadow:0 0 24px rgba(255,45,85,0.65),0 0 48px rgba(255,45,85,0.25)} }
+
+  .card-body { padding: 0 10px 2px; position: relative; z-index: 5; }
+  .card-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 2px; }
+  .card.mythique .card-name { text-shadow: 0 0 12px rgba(255,45,85,0.4); }
+  .card-role { font-size: 10px; color: rgba(255,255,255,0.6); font-style: italic; margin-bottom: 2px; }
+  .card-desc { font-size: 9.5px; color: rgba(255,255,255,0.5); line-height: 1.4; }
+
+  .card-stats { display: flex; justify-content: space-around; padding: 7px 10px 10px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; z-index: 5; gap: 4px; }
+  .card-stat { display: flex; align-items: center; gap: 3px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.8); }
+  .card-stat .stat-icon { font-size: 12px; }
+  .card.legendaire .card-stat { color: #ffe99a; }
+  .card.mythique .card-stat { color: #ff9aaa; }
+
+  .card-count-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; padding: 1px 7px; z-index: 10; backdrop-filter: blur(4px); }
+
+  /* COLLECTION */
+  .section-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 1.25rem; }
+  .coll-stats { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .stat-chip { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; flex: 1; min-width: 76px; text-align: center; }
+  .stat-chip .n { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; display: block; line-height: 1.1; margin-bottom: 2px; }
+  .stat-chip .lbl { color: var(--muted); font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .stat-chip .n.badge-rare { color: var(--rare); }
+  .stat-chip .n.badge-epique { color: var(--epique); }
+  .stat-chip .n.badge-legendaire { color: var(--legendaire); }
+  .stat-chip .n.badge-mythique { color: var(--mythique); }
+
+  .coll-filter-wrap { margin-bottom: 1.25rem; }
+  .coll-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px; display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .filter-btn { font-size: 12px; padding: 5px 14px; border-radius: 999px; background: transparent; border: 1px solid transparent; color: var(--muted); font-weight: 500; transition: all 0.15s; }
+  .filter-btn:hover { background: var(--surface2); color: var(--text); }
+  .filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .filter-btn.active-mythique { background: rgba(255,45,85,0.12); color: var(--mythique); border-color: rgba(255,45,85,0.35); }
+
+  .coll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .coll-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 4rem 0; grid-column: 1/-1; line-height: 2; }
+
+  /* ADMIN */
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+  @media (max-width: 640px) { .admin-grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1.5rem; }
+  .panel-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 1rem; color: var(--text); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .admin-card-list { display: flex; flex-direction: column; gap: 6px; max-height: 460px; overflow-y: auto; }
+  .admin-card-list::-webkit-scrollbar { width: 4px; }
+  .admin-card-list::-webkit-scrollbar-track { background: transparent; }
+  .admin-card-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .admin-card-item { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; transition: border-color 0.15s; }
+  .admin-card-item:hover { border-color: var(--border2); }
+
+  .admin-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; flex-shrink: 0; overflow: hidden; border: 1.5px solid transparent; }
+  .admin-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .admin-avatar.rare { background: rgba(74,158,255,0.12); color: #7ec8ff; border-color: rgba(74,158,255,0.3); }
+  .admin-avatar.epique { background: rgba(176,107,255,0.12); color: #d4a0ff; border-color: rgba(176,107,255,0.3); }
+  .admin-avatar.legendaire { background: rgba(255,184,48,0.12); color: #ffd070; border-color: rgba(255,184,48,0.3); }
+  .admin-avatar.mythique { background: rgba(255,45,85,0.12); color: #ff8099; border-color: rgba(255,45,85,0.35); }
+
+  .admin-card-info { flex: 1; min-width: 0; }
+  .admin-card-name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .admin-card-meta { font-size: 11px; color: var(--muted); }
+
+  .rarity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .rarity-dot.rare { background: var(--rare); box-shadow: 0 0 4px var(--rare); }
+  .rarity-dot.epique { background: var(--epique); box-shadow: 0 0 4px var(--epique); }
+  .rarity-dot.legendaire { background: var(--legendaire); box-shadow: 0 0 4px var(--legendaire); }
+  .rarity-dot.mythique { background: var(--mythique); box-shadow: 0 0 6px var(--mythique); animation: dotPulse 2s ease-in-out infinite; }
+  @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .btn-icon { background: transparent; border: none; color: var(--muted); padding: 4px 6px; font-size: 14px; line-height: 1; border-radius: 4px; }
+  .btn-icon:hover { color: #ff6b85; background: rgba(255,45,85,0.08); }
+
+  .image-preview { width: 100%; height: 80px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); overflow: hidden; margin-top: 4px; cursor: pointer; position: relative; transition: border-color 0.15s; }
+  .image-preview:hover { border-color: rgba(255,255,255,0.25); }
+  .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .image-preview input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; padding: 0; border: none; background: none; }
+
+  .badge-rare { color: var(--rare); }
+  .badge-epique { color: var(--epique); }
+  .badge-legendaire { color: var(--legendaire); }
+  .badge-mythique { color: var(--mythique); font-weight: 600; }
+
+  .section-sep { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+  .no-cards-msg { font-size: 13px; color: var(--muted); text-align: center; padding: 1.5rem 0; }
+
+  .admin-badge { font-size: 9px; font-weight: 700; font-family: 'Syne', sans-serif; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(255,184,48,0.12); border: 1px solid rgba(255,184,48,0.3); color: var(--legendaire); padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
+
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 11px 22px; font-size: 13px; font-weight: 500; color: var(--text); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index: 1000; pointer-events: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Sync indicator */
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
+  .sync-dot.syncing { background: var(--legendaire); animation: dotPulse 0.8s ease-in-out infinite; }
+  .sync-dot.error { background: var(--mythique); }
+
+  @media (max-width: 500px) {
+    .pack-hero h2 { font-size: 22px; }
+    nav { padding: 0 1rem; }
+    .main { padding: 1.5rem 1rem; }
+    .cards-row, .coll-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .nav-username { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOADING -->
+<div id="screen-loading" class="screen active">
+  <div class="loading-logo">TeaMasters</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Connexion au serveur...</div>
+</div>
+
+<!-- SETUP (1ère fois) -->
+<div id="screen-setup" class="screen">
+  <div style="text-align:center">
+    <div class="login-logo">TeaMasters</div>
+    <div class="login-tagline" style="margin-top:4px">Configuration initiale</div>
+  </div>
+  <div class="setup-box">
+    <div class="setup-title">⚙️ Setup JSONBin</div>
+    <div class="setup-sub">Il faut juste créer un compte gratuit pour stocker les données en ligne. Suis ces 3 étapes :</div>
+
+    <div class="setup-step">
+      <strong>1. Créer un compte gratuit</strong>
+      Va sur <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> → Sign Up (gratuit, pas de CB)
+    </div>
+    <div class="setup-step">
+      <strong>2. Copier ta clé API</strong>
+      Dashboard → <code>API Keys</code> → copie la clé qui commence par <code>$2b$...</code>
+    </div>
+    <div class="setup-step">
+      <strong>3. Coller ici et valider</strong>
+      La config est sauvegardée dans le code, tes potes n'ont rien à faire.
+    </div>
+
+    <div class="setup-fields">
+      <div class="form-row">
+        <label class="form-label">Clé API JSONBin (commence par $2b$...)</label>
+        <input type="password" id="setup-apikey" placeholder="$2b$10$..." />
+      </div>
+      <div class="error-msg" id="setup-error"></div>
+      <button class="btn-primary" onclick="doSetup()">Valider et lancer le jeu 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen">
+  <div>
+    <div class="login-logo">TeaMasters</div>
+    <div class="login-tagline">Le jeu de cartes entre potes ✦</div>
+  </div>
+  <div class="login-box">
+    <div class="form-row">
+      <label class="form-label">Ton pseudo</label>
+      <input type="text" id="login-name" placeholder="Ex : Kévin, Sarah..." />
+    </div>
+    <div class="admin-pass-row" id="admin-pass-row">
+      <label class="form-label">Mot de passe admin</label>
+      <input type="password" id="login-pass" placeholder="Mot de passe" />
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <button class="btn-primary" onclick="doLogin()">Entrer dans le jeu</button>
+    <div class="admin-toggle" onclick="toggleAdminPass()">admin</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <nav>
+    <div class="nav-brand">TeaMasters</div>
+    <div class="nav-tabs" id="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('packs', this)">Packs</button>
+      <button class="nav-tab" onclick="showPage('collection', this)">Collection</button>
+      <button class="nav-tab" id="admin-tab" style="display:none" onclick="showPage('admin', this)">
+        Admin <span class="admin-badge">⚙</span>
+      </button>
+    </div>
+    <div class="nav-right">
+      <span id="sync-indicator" title="Synchronisation"><span class="sync-dot" id="sync-dot"></span></span>
+      <span class="nav-username" id="nav-user"></span>
+      <button class="btn-logout" onclick="logout()">Quitter</button>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- PACKS -->
+    <div class="page active" id="page-packs">
+      <div class="pack-hero">
+        <h2>Ouvre tes packs ✦</h2>
+        <p>5 cartes par pack · Rare, Épique, Légendaire ou Mythique</p>
+        <div class="odds-row">
+          <span class="odds-chip rare">Rare 62%</span>
+          <span class="odds-chip epique">Épique 22%</span>
+          <span class="odds-chip legendaire">Légendaire 12%</span>
+          <span class="odds-chip mythique">Mythique 4%</span>
+        </div>
+      </div>
+      <div class="packs-info">
+        <div class="info-chip">🎴 Packs : <strong id="packs-left-display">5</strong></div>
+        <div class="info-chip" id="timer-chip" style="display:none">⏱ Recharge dans <strong id="timer-display">10:00</strong></div>
+      </div>
+      <div class="pack-wrap">
+        <div class="pack-visual" id="pack-visual" onclick="openPack()">
+          <div class="pack-icon">✦</div>
+          <div class="pack-label">Ouvrir</div>
+        </div>
+      </div>
+      <div id="no-cards-warning" style="display:none; text-align:center; color:var(--muted); font-size:13px; margin-top:1rem;">
+        Aucune carte dans le jeu. L'admin doit en ajouter !
+      </div>
+      <div class="reveal-section" id="reveal-section">
+        <div class="reveal-label">✦ Cartes obtenues ✦</div>
+        <div class="cards-row" id="reveal-cards"></div>
+      </div>
+    </div>
+
+    <!-- COLLECTION -->
+    <div class="page" id="page-collection">
+      <div class="section-title">Ma collection</div>
+      <div class="coll-stats" id="coll-stats"></div>
+      <div class="coll-filter-wrap">
+        <div class="coll-filter">
+          <button class="filter-btn active" onclick="filterColl('all', this)">Toutes</button>
+          <button class="filter-btn" onclick="filterColl('mythique', this)">✦ Mythiques</button>
+          <button class="filter-btn" onclick="filterColl('legendaire', this)">Légendaires</button>
+          <button class="filter-btn" onclick="filterColl('epique', this)">Épiques</button>
+          <button class="filter-btn" onclick="filterColl('rare', this)">Rares</button>
+        </div>
+      </div>
+      <div class="coll-grid" id="coll-grid"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="page" id="page-admin">
+      <div class="section-title" style="margin-bottom:1.5rem">Panneau admin</div>
+      <div class="admin-grid">
+        <div class="panel">
+          <div class="panel-title">Ajouter une carte</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Nom du pote</label>
+            <input type="text" id="a-name" placeholder="Ex : Kévin" />
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Rôle / titre</label>
+            <input type="text" id="a-role" placeholder="Ex : Le rageux officiel" />
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Inside joke / description</label>
+            <textarea id="a-desc" placeholder="Ex : Throw son clavier dès qu'il meurt..."></textarea>
+          </div>
+          <div class="form-row-2" style="margin-bottom:10px">
+            <div class="form-row">
+              <label class="form-label">Rareté</label>
+              <select id="a-rarity">
+                <option value="rare">Rare</option>
+                <option value="epique">Épique</option>
+                <option value="legendaire">Légendaire</option>
+                <option value="mythique">✦ Mythique</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Initiales (sans photo)</label>
+              <input type="text" id="a-initials" placeholder="Ex : KV" maxlength="3" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Photo (optionnel)</label>
+            <div class="image-preview" id="img-preview">
+              <span id="img-preview-text">Clique pour choisir</span>
+              <input type="file" id="a-image" accept="image/*" onchange="previewImage(this)" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:14px">
+            <label class="form-label">Pouvoir spécial</label>
+            <input type="text" id="a-power" placeholder="Ex : +10 Rage, Clutch ultime..." />
+          </div>
+          <button class="btn-primary" onclick="addCard()">Ajouter la carte</button>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Cartes dans le jeu (<span id="card-count">0</span>)</div>
+          <div class="admin-card-list" id="admin-card-list">
+            <div class="no-cards-msg">Aucune carte pour l'instant.</div>
+          </div>
+          <hr class="section-sep">
+          <div class="panel-title" style="margin-bottom:8px">Mot de passe admin</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <input type="password" id="new-admin-pass" placeholder="Nouveau mot de passe" />
+          </div>
+          <button onclick="changeAdminPass()" style="width:100%">Changer</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── API PROXY (Vercel serverless) ───────────────────────────────────────────
+// Toutes les requêtes passent par /api/db — la clé JSONbin reste côté serveur.
+
+async function apiGet() {
+  const r = await fetch('/api/db');
+  if (!r.ok) throw new Error('apiGet failed ' + r.status);
+  return r.json();
+}
+
+async function apiPut(data) {
+  const r = await fetch('/api/db', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('apiPut failed ' + r.status);
+  return r.json();
+}
+
+async function apiInit() {
+  const r = await fetch('/api/db', { method: 'POST' });
+  if (!r.ok) throw new Error('apiInit failed ' + r.status);
+  return r.json();
+}
+
+// ─── DB EN MÉMOIRE ───────────────────────────────────────────────────────────
+let DB = { cards: [], users: {}, adminPass: 'admin123' };
+let syncTimeout = null;
+
+function setSyncState(state) {
+  const dot = document.getElementById('sync-dot');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+}
+
+async function loadDB() {
+  try {
+    setSyncState('syncing');
+    const data = await apiGet();
+    if (data._noBin) {
+      await apiInit();
+      DB = { cards: [], users: {}, adminPass: 'admin123' };
+    } else {
+      DB = data;
+    }
+    if (!DB.cards) DB.cards = [];
+    if (!DB.users) DB.users = {};
+    if (!DB.adminPass) DB.adminPass = 'admin123';
+    setSyncState('ok');
+    return true;
+  } catch(e) {
+    setSyncState('error');
+    console.error('loadDB error', e);
+    return false;
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(saveDB, 600);
+}
+
+async function saveDB() {
+  try {
+    setSyncState('syncing');
+    await apiPut(DB);
+    setSyncState('ok');
+  } catch(e) {
+    setSyncState('error');
+    showToast('⚠️ Erreur de sauvegarde !');
+    console.error('saveDB error', e);
+  }
+}
+
+// ─── HELPERS DB ──────────────────────────────────────────────────────────────
+function getCards() { return DB.cards || []; }
+function saveCards(c) { DB.cards = c; scheduleSave(); }
+function getAdminPass() { return DB.adminPass || 'admin123'; }
+function getUserData(n) {
+  if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 5, timerEnd: null };
+  return DB.users[n];
+}
+function saveUserData(n, d) { DB.users[n] = d; scheduleSave(); }
+
+// ─── SCREENS ─────────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+async function init() {
+  showScreen('loading');
+  const ok = await loadDB();
+  if (!ok) {
+    document.querySelector('.loading-text').textContent = '❌ Erreur de connexion. Vérifie ta config Vercel.';
+    return;
+  }
+  showScreen('login');
+}
+
+init();
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+let currentUser = null, isAdmin = false, timerInterval = null;
+
+function toggleAdminPass() {
+  const r = document.getElementById('admin-pass-row');
+  r.classList.toggle('visible');
+  if (!r.classList.contains('visible')) document.getElementById('login-pass').value = '';
+}
+
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if (!name) { err.textContent = 'Entre ton pseudo !'; return; }
+  if (pass && pass !== getAdminPass()) { err.textContent = 'Mauvais mot de passe admin.'; return; }
+  err.textContent = '';
+  isAdmin = pass === getAdminPass() && pass !== '';
+  currentUser = name;
+
+  // Recharger les données fraîches avant d'entrer
+  await loadDB();
+
+  showScreen('app');
+  document.getElementById('nav-user').textContent = name;
+  if (isAdmin) document.getElementById('admin-tab').style.display = '';
+  else document.getElementById('admin-tab').style.display = 'none';
+  initPackPage();
+  renderCollection();
+  if (isAdmin) renderAdminList();
+}
+
+function logout() {
+  currentUser = null; isAdmin = false;
+  showScreen('login');
+  document.getElementById('admin-tab').style.display = 'none';
+  document.getElementById('admin-pass-row').classList.remove('visible');
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-name').value = '';
+  if (timerInterval) clearInterval(timerInterval);
+  showPage('packs', document.querySelector('.nav-tab'));
+}
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'collection') renderCollection();
+  if (id === 'admin') renderAdminList();
+}
+
+// ─── PACKS ───────────────────────────────────────────────────────────────────
+function initPackPage() { const ud = getUserData(currentUser); checkTimer(ud); updatePackDisplay(ud); }
+
+function checkTimer(ud) {
+  if (!ud.timerEnd) return;
+  if (Date.now() >= ud.timerEnd) { ud.packsLeft = 5; ud.timerEnd = null; saveUserData(currentUser, ud); }
+}
+
+function updatePackDisplay(ud) {
+  document.getElementById('packs-left-display').textContent = ud.packsLeft;
+  const pv = document.getElementById('pack-visual');
+  if (ud.packsLeft > 0) { pv.classList.remove('empty'); pv.onclick = openPack; }
+  else { pv.classList.add('empty'); pv.onclick = null; }
+  const cards = getCards();
+  document.getElementById('no-cards-warning').style.display = cards.length === 0 ? 'block' : 'none';
+  if (ud.timerEnd) { document.getElementById('timer-chip').style.display = ''; startTimerDisplay(ud.timerEnd); }
+  else { document.getElementById('timer-chip').style.display = 'none'; if (timerInterval) clearInterval(timerInterval); }
+}
+
+function startTimerDisplay(endTime) {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const left = Math.max(0, endTime - Date.now());
+    const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+    document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2, '0');
+    if (left <= 0) {
+      clearInterval(timerInterval);
+      const ud = getUserData(currentUser); ud.packsLeft = 5; ud.timerEnd = null;
+      saveUserData(currentUser, ud); updatePackDisplay(ud); showToast('🎴 Packs rechargés !');
+    }
+  }, 1000);
+}
+
+function weightedPick(cards) {
+  const by = { mythique: cards.filter(c => c.rarity === 'mythique'), legendaire: cards.filter(c => c.rarity === 'legendaire'), epique: cards.filter(c => c.rarity === 'epique'), rare: cards.filter(c => c.rarity === 'rare') };
+  const roll = Math.random() * 100;
+  let rarity = roll < 4 ? 'mythique' : roll < 16 ? 'legendaire' : roll < 38 ? 'epique' : 'rare';
+  let pool = by[rarity];
+  if (!pool || !pool.length) { for (const r of ['mythique', 'legendaire', 'epique', 'rare']) { if (by[r] && by[r].length) { pool = by[r]; break; } } }
+  if (!pool || !pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function openPack() {
+  // Refresh DB pour avoir les dernières cartes ajoutées par l'admin
+  await loadDB();
+  const ud = getUserData(currentUser); checkTimer(ud);
+  const cards = getCards();
+  if (!cards.length) { showToast('Aucune carte dispo !'); return; }
+  if (ud.packsLeft <= 0) { showToast('Plus de packs ! Attends la recharge.'); return; }
+  ud.packsLeft--;
+  if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 10 * 60 * 1000;
+  const drawn = [];
+  for (let i = 0; i < 5; i++) { const c = weightedPick(cards); if (c) drawn.push(c); }
+  drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
+  saveUserData(currentUser, ud); updatePackDisplay(ud);
+
+  const grid = document.getElementById('reveal-cards');
+  grid.innerHTML = '';
+  drawn.forEach((c, i) => {
+    const el = makeCardEl(c);
+    el.style.opacity = '0'; el.style.transform = 'translateY(20px) scale(0.95)';
+    grid.appendChild(el);
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      el.style.opacity = '1'; el.style.transform = '';
+    }, 80 * i);
+  });
+  document.getElementById('reveal-section').classList.add('visible');
+  const hasMythique = drawn.some(c => c.rarity === 'mythique');
+  showToast(hasMythique ? '✦ MYTHIQUE ! Incroyable !' : '🎴 Pack ouvert !');
+}
+
+function makeCardEl(c, count) {
+  const div = document.createElement('div');
+  div.className = 'card ' + (c.rarity || '');
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
+  const stars = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
+  const badge = labels[c.rarity] || 'Rare';
+  const star = stars[c.rarity] || '☆';
+  let av = c.image ? `<img src="${c.image}" alt="${c.name}" />` : (c.initials || (c.name || '?').slice(0, 2).toUpperCase());
+  const pwr = parseInt((c.power || '').replace(/\D/g, '')) || Math.floor(Math.random() * 5000 + 1000);
+  const lck = Math.floor(Math.random() * 5000 + 500);
+  let starsHTML = '';
+  if (c.rarity === 'mythique') {
+    starsHTML = '<div class="card-stars">';
+    for (let i = 0; i < 12; i++) {
+      const x = (Math.random() * 90 + 5).toFixed(1);
+      const y = (Math.random() * 100).toFixed(1);
+      const dur = (2 + Math.random() * 2).toFixed(1);
+      const delay = (Math.random() * 3).toFixed(1);
+      const sz = Math.random() > 0.5 ? 2 : 3;
+      starsHTML += `<div class="star-particle" style="left:${x}%;top:${y}%;width:${sz}px;height:${sz}px;--dur:${dur}s;--delay:${delay}s"></div>`;
+    }
+    starsHTML += '</div>';
+  }
+  const mythBorder = c.rarity === 'mythique' ? '<div class="mythique-border"></div>' : '';
+  div.innerHTML = `
+    ${count ? `<div class="card-count-badge">x${count}</div>` : ''}
+    ${mythBorder}
+    <div class="card-shine"></div>
+    ${starsHTML}
+    <div class="card-top">
+      <div class="rarity-badge">${badge}</div>
+      <div class="card-star">${star}</div>
+    </div>
+    <div class="card-avatar-wrap">
+      <div class="card-avatar">${av}</div>
+    </div>
+    <div class="card-body">
+      <div class="card-name">${c.name || '?'}</div>
+      ${c.role ? `<div class="card-role">${c.role}</div>` : ''}
+      ${c.desc ? `<div class="card-desc">${c.desc}</div>` : ''}
+    </div>
+    <div class="card-stats">
+      <div class="card-stat"><span class="stat-icon">💥</span>${pwr}</div>
+      <div class="card-stat"><span class="stat-icon">✨</span>${lck}</div>
+    </div>
+  `;
+  return div;
+}
+
+let collFilter = 'all';
+function filterColl(f, btn) {
+  collFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique'));
+  if (btn) { btn.classList.add('active'); if (f === 'mythique') btn.classList.add('active-mythique'); }
+  renderCollection();
+}
+
+function renderCollection() {
+  if (!currentUser) return;
+  const ud = getUserData(currentUser);
+  const coll = ud.collection || [];
+  const counts = {};
+  coll.forEach(c => { const k = c.name + '_' + c.rarity; if (!counts[k]) counts[k] = { card: c, n: 0 }; counts[k].n++; });
+  const total = coll.length;
+  const rares = coll.filter(c => c.rarity === 'rare').length;
+  const epiques = coll.filter(c => c.rarity === 'epique').length;
+  const legendaires = coll.filter(c => c.rarity === 'legendaire').length;
+  const mythiques = coll.filter(c => c.rarity === 'mythique').length;
+  document.getElementById('coll-stats').innerHTML = `
+    <div class="stat-chip"><span class="n">${total}</span><span class="lbl">Total</span></div>
+    <div class="stat-chip"><span class="n badge-rare">${rares}</span><span class="lbl">Rares</span></div>
+    <div class="stat-chip"><span class="n badge-epique">${epiques}</span><span class="lbl">Épiques</span></div>
+    <div class="stat-chip"><span class="n badge-legendaire">${legendaires}</span><span class="lbl">Légendaires</span></div>
+    <div class="stat-chip"><span class="n badge-mythique">${mythiques}</span><span class="lbl">Mythiques</span></div>
+  `;
+  const grid = document.getElementById('coll-grid');
+  grid.innerHTML = '';
+  const filtered = Object.values(counts).filter(({ card }) => collFilter === 'all' || card.rarity === collFilter);
+  filtered.sort((a, b) => { const o = { mythique: 0, legendaire: 1, epique: 2, rare: 3 }; return (o[a.card.rarity] || 4) - (o[b.card.rarity] || 4); });
+  if (!filtered.length) { grid.innerHTML = '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>'; return; }
+  filtered.forEach(({ card, n }) => grid.appendChild(makeCardEl(card, n > 1 ? n : null)));
+}
+
+function previewImage(input) {
+  const preview = document.getElementById('img-preview'), text = document.getElementById('img-preview-text');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => { text.style.display = 'none'; let img = preview.querySelector('img'); if (!img) { img = document.createElement('img'); preview.insertBefore(img, input); } img.src = e.target.result; };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function addCard() {
+  const name = document.getElementById('a-name').value.trim();
+  if (!name) { showToast('Donne un nom !'); return; }
+  const imgFile = document.getElementById('a-image').files[0];
+  const btn = document.querySelector('#page-admin .btn-primary');
+  btn.disabled = true; btn.textContent = 'Ajout en cours...';
+  const finalize = async img => {
+    const card = {
+      id: Date.now(), name,
+      role: document.getElementById('a-role').value.trim(),
+      desc: document.getElementById('a-desc').value.trim(),
+      rarity: document.getElementById('a-rarity').value,
+      initials: (document.getElementById('a-initials').value.trim() || name.slice(0, 2)).toUpperCase(),
+      power: document.getElementById('a-power').value.trim(),
+      image: img || null
+    };
+    const cards = getCards(); cards.push(card); saveCards(cards);
+    await saveDB(); // sauvegarde immédiate pour que les potes voient la carte
+    renderAdminList();
+    showToast('Carte "' + name + '" ajoutée et déployée ! ✅');
+    ['a-name', 'a-role', 'a-desc', 'a-power', 'a-initials', 'a-image'].forEach(id => document.getElementById(id).value = '');
+    const prev = document.getElementById('img-preview'), ex = prev.querySelector('img');
+    if (ex) ex.remove(); document.getElementById('img-preview-text').style.display = '';
+    btn.disabled = false; btn.textContent = 'Ajouter la carte';
+  };
+  if (imgFile) { const r = new FileReader(); r.onload = e => finalize(e.target.result); r.readAsDataURL(imgFile); }
+  else await finalize(null);
+}
+
+async function deleteCard(id) {
+  saveCards(getCards().filter(c => c.id !== id));
+  await saveDB();
+  renderAdminList();
+  showToast('Carte supprimée.');
+}
+
+function renderAdminList() {
+  const cards = getCards();
+  document.getElementById('card-count').textContent = cards.length;
+  const list = document.getElementById('admin-card-list'); list.innerHTML = '';
+  if (!cards.length) { list.innerHTML = '<div class="no-cards-msg">Aucune carte pour l\'instant.</div>'; return; }
+  const lbls = { legendaire: '<span class="badge-legendaire">Légendaire</span>', epique: '<span class="badge-epique">Épique</span>', rare: '<span class="badge-rare">Rare</span>', mythique: '<span class="badge-mythique">✦ Mythique</span>' };
+  cards.forEach(c => {
+    const div = document.createElement('div'); div.className = 'admin-card-item';
+    const av = c.image ? `<img src="${c.image}" alt="${c.name}" />` : (c.initials || c.name.slice(0, 2).toUpperCase());
+    div.innerHTML = `<div class="rarity-dot ${c.rarity}"></div><div class="admin-avatar ${c.rarity}">${av}</div><div class="admin-card-info"><div class="admin-card-name">${c.name}</div><div class="admin-card-meta">${lbls[c.rarity] || lbls.rare}${c.role ? ' · ' + c.role : ''}</div></div><button class="btn-icon" onclick="deleteCard(${c.id})" title="Supprimer">✕</button>`;
+    list.appendChild(div);
+  });
+}
+
+async function changeAdminPass() {
+  const np = document.getElementById('new-admin-pass').value;
+  if (!np) { showToast('Entre un mot de passe !'); return; }
+  DB.adminPass = np;
+  await saveDB();
+  document.getElementById('new-admin-pass').value = '';
+  showToast('Mot de passe changé !');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
