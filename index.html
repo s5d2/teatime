@@ -299,143 +299,176 @@
   .reveal-label { font-size: 11px; color: var(--muted); margin-bottom: 20px; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
   .cards-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-bottom: 2rem; }
 
-  /* CARD */
+  /* ══════════════════════════════════════
+     CARD — style photo + dégradé coloré
+  ══════════════════════════════════════ */
   .card {
-    border-radius: 20px;
-    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    border: 2px solid rgba(255,255,255,0.18);
     display: flex;
     flex-direction: column;
     position: relative;
-    text-align: center;
     overflow: hidden;
-    width: 160px;
-    height: 224px;
+    width: 155px;
+    height: 230px;
     flex-shrink: 0;
     transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
     cursor: pointer;
+    background: #111;
   }
   .card:hover { transform: translateY(-8px) scale(1.03); }
 
-  /* Fonds colorés chauds façon carte à collectionner */
-  .card.rare {
-    background: linear-gradient(170deg, #1a4fa0 0%, #0d2f6e 40%, #071a45 100%);
-    border-color: rgba(74,158,255,0.5);
-    box-shadow: 0 6px 24px rgba(74,158,255,0.2);
-  }
-  .card.rare:hover { box-shadow: 0 12px 48px rgba(74,158,255,0.4); }
-  .card.epique {
-    background: linear-gradient(170deg, #5a1fa0 0%, #36106e 40%, #1e0845 100%);
-    border-color: rgba(176,107,255,0.5);
-    box-shadow: 0 6px 24px rgba(176,107,255,0.2);
-  }
-  .card.epique:hover { box-shadow: 0 12px 48px rgba(176,107,255,0.45); }
-  .card.legendaire {
-    background: linear-gradient(170deg, #c97a00 0%, #8a5000 40%, #4a2a00 100%);
-    border-color: rgba(255,184,48,0.6);
-    box-shadow: 0 6px 24px rgba(255,184,48,0.25);
-  }
-  .card.legendaire:hover { box-shadow: 0 12px 48px rgba(255,184,48,0.5); }
+  /* Couleurs de bordure & ombre par rareté */
+  .card.rare    { border-color: rgba(74,158,255,0.55);  box-shadow: 0 6px 24px rgba(74,158,255,0.2); }
+  .card.epique  { border-color: rgba(176,107,255,0.55); box-shadow: 0 6px 24px rgba(176,107,255,0.2); }
+  .card.legendaire { border-color: rgba(255,184,48,0.65); box-shadow: 0 6px 28px rgba(255,184,48,0.25); }
+  .card.mythique   { border-color: transparent; box-shadow: 0 6px 28px rgba(255,45,85,0.3); }
 
-  /* MYTHIQUE */
-  .card.mythique {
-    background: linear-gradient(170deg, #8a0025 0%, #5a000f 40%, #2a0008 100%);
-    box-shadow: 0 6px 28px rgba(255,45,85,0.3);
-    border-color: transparent;
-    position: relative;
-  }
+  .card.rare:hover    { box-shadow: 0 14px 48px rgba(74,158,255,0.4); }
+  .card.epique:hover  { box-shadow: 0 14px 48px rgba(176,107,255,0.45); }
+  .card.legendaire:hover { box-shadow: 0 14px 52px rgba(255,184,48,0.5); }
+  .card.mythique:hover   { box-shadow: 0 14px 56px rgba(255,45,85,0.6); transform: translateY(-10px) scale(1.04); }
+
+  /* Bordure animée mythique */
   .mythique-border {
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    padding: 2px;
+    position: absolute; inset: 0; border-radius: 18px; padding: 2px;
     background: linear-gradient(135deg, #ff2d55 0%, #ff6b35 25%, #ffb830 50%, #ff6b35 75%, #ff2d55 100%);
     background-size: 300% 300%;
     animation: mythBorderAnim 3s ease infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: destination-out;
-    mask-composite: exclude;
-    z-index: 1;
-    pointer-events: none;
+    -webkit-mask-composite: destination-out; mask-composite: exclude;
+    z-index: 1; pointer-events: none;
   }
   @keyframes mythBorderAnim { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-  .card.mythique:hover { box-shadow: 0 14px 56px rgba(255,45,85,0.6); transform: translateY(-10px) scale(1.04); }
 
-  /* Éclat lumineux sur la carte */
-  .card-shine { position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: 20px; }
-  .card.rare .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(160,210,255,0.35) 0%, transparent 55%); }
-  .card.epique .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(210,160,255,0.4) 0%, transparent 55%); }
-  .card.legendaire .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(255,230,100,0.45) 0%, transparent 55%); }
-  .card.mythique .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(255,120,140,0.5) 0%, transparent 55%); animation: mythShine 4s ease-in-out infinite; }
-  @keyframes mythShine { 0%,100%{opacity:1} 50%{opacity:0.55} }
-
-  /* Rayons de soleil façon carte Pokémon */
-  .card-rays {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-    border-radius: 20px;
-    overflow: hidden;
-  }
-  .card-rays::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 200%;
-    height: 200%;
-    transform: translate(-50%, -50%);
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg, rgba(255,255,255,0.06) 10deg, transparent 20deg,
-      transparent 30deg, rgba(255,255,255,0.04) 40deg, transparent 50deg,
-      transparent 60deg, rgba(255,255,255,0.06) 70deg, transparent 80deg,
-      transparent 90deg, rgba(255,255,255,0.04) 100deg, transparent 110deg,
-      transparent 120deg, rgba(255,255,255,0.06) 130deg, transparent 140deg,
-      transparent 150deg, rgba(255,255,255,0.04) 160deg, transparent 170deg,
-      transparent 180deg, rgba(255,255,255,0.06) 190deg, transparent 200deg,
-      transparent 210deg, rgba(255,255,255,0.04) 220deg, transparent 230deg,
-      transparent 240deg, rgba(255,255,255,0.06) 250deg, transparent 260deg,
-      transparent 270deg, rgba(255,255,255,0.04) 280deg, transparent 290deg,
-      transparent 300deg, rgba(255,255,255,0.06) 310deg, transparent 320deg,
-      transparent 330deg, rgba(255,255,255,0.04) 340deg, transparent 350deg, transparent 360deg
-    );
-  }
-
-  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: 20px; }
-  .star-particle { position: absolute; border-radius: 50%; background: #fff; animation: starFloat var(--dur, 3s) ease-in-out infinite; animation-delay: var(--delay, 0s); opacity: 0; }
+  /* Particules mythique */
+  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; border-radius: 18px; }
+  .star-particle { position: absolute; border-radius: 50%; background: #fff; animation: starFloat var(--dur,3s) ease-in-out infinite; animation-delay: var(--delay,0s); opacity: 0; }
   @keyframes starFloat { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:1} 80%{opacity:0.8} 100%{transform:translateY(-55px) scale(1.5);opacity:0} }
 
-  .card-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 0; position: relative; z-index: 5; }
+  /* ── Zone photo (haut de carte) ── */
+  .card-photo {
+    width: 100%;
+    height: 115px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a2e;
+  }
+  .card-photo img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  /* initiales quand pas de photo */
+  .card-photo-initials {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800;
+    color: rgba(255,255,255,0.9);
+  }
+  /* fondu en bas de la photo vers la couleur de la carte */
+  .card-photo-fade {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 50px; pointer-events: none;
+  }
+  .card.rare      .card-photo-fade { background: linear-gradient(to bottom, transparent, #0d2855); }
+  .card.epique    .card-photo-fade { background: linear-gradient(to bottom, transparent, #1a0845); }
+  .card.legendaire .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a1500); }
+  .card.mythique  .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a0515); }
 
-  .rarity-badge { font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; }
-  .card.rare .rarity-badge { background: rgba(74,158,255,0.2); color: #aadeff; border-color: rgba(74,158,255,0.5); }
-  .card.epique .rarity-badge { background: rgba(176,107,255,0.2); color: #e0b8ff; border-color: rgba(176,107,255,0.5); }
-  .card.legendaire .rarity-badge { background: rgba(255,184,48,0.2); color: #ffe090; border-color: rgba(255,184,48,0.6); }
-  .card.mythique .rarity-badge { background: linear-gradient(135deg, rgba(255,45,85,0.25), rgba(255,107,53,0.25)); color: #ffb0c0; border-color: rgba(255,45,85,0.6); text-shadow: 0 0 8px rgba(255,45,85,0.5); }
+  /* fond coloré de la zone photo selon rareté */
+  .card.rare      .card-photo { background: linear-gradient(160deg, #0d2855, #071a45); }
+  .card.epique    .card-photo { background: linear-gradient(160deg, #200850, #0a0220); }
+  .card.legendaire .card-photo { background: linear-gradient(160deg, #3a1e00, #1a0c00); }
+  .card.mythique  .card-photo { background: linear-gradient(160deg, #2a0515, #0d0108); }
 
-  .card-star { font-size: 16px; opacity: 0.7; color: rgba(255,255,255,0.9); line-height: 1; position: relative; z-index: 5; }
-  .card.legendaire .card-star { color: #ffd070; opacity: 1; font-size: 18px; }
-  .card.mythique .card-star { color: #ff4466; opacity: 1; font-size: 18px; text-shadow: 0 0 10px rgba(255,45,85,0.8), 0 0 20px rgba(255,45,85,0.4); animation: starPulse 2s ease-in-out infinite; }
+  /* ── Badge rareté + étoile en overlay sur la photo ── */
+  .card-top {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px; z-index: 5;
+  }
+  .rarity-badge {
+    font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px; border: 1px solid transparent;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .card.rare      .rarity-badge { background: rgba(10,30,80,0.75);  color: #aadeff; border-color: rgba(74,158,255,0.5); }
+  .card.epique    .rarity-badge { background: rgba(20,5,50,0.75);   color: #e0b8ff; border-color: rgba(176,107,255,0.5); }
+  .card.legendaire .rarity-badge { background: rgba(40,20,0,0.75); color: #ffe090; border-color: rgba(255,184,48,0.6); }
+  .card.mythique  .rarity-badge { background: rgba(40,0,15,0.75);  color: #ffb0c0; border-color: rgba(255,45,85,0.6); }
+
+  .card-star {
+    font-size: 16px; line-height: 1; color: rgba(255,255,255,0.8);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .card.legendaire .card-star { color: #ffd070; font-size: 18px; }
+  .card.mythique   .card-star { color: #ff4466; font-size: 18px; text-shadow: 0 0 10px rgba(255,45,85,0.9); animation: starPulse 2s ease-in-out infinite; }
   @keyframes starPulse { 0%,100%{text-shadow:0 0 10px rgba(255,45,85,0.8),0 0 20px rgba(255,45,85,0.4)} 50%{text-shadow:0 0 18px rgba(255,45,85,1),0 0 36px rgba(255,45,85,0.7)} }
 
-  .card-avatar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 12px; position: relative; z-index: 5; }
-  .card-avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; overflow: hidden; flex-shrink: 0; border: 2.5px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: #fff; transition: transform 0.2s; }
-  .card:hover .card-avatar { transform: scale(1.06); }
-  .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .card.rare .card-avatar { border-color: rgba(74,158,255,0.6); box-shadow: 0 0 12px rgba(74,158,255,0.25); }
-  .card.epique .card-avatar { border-color: rgba(176,107,255,0.6); box-shadow: 0 0 12px rgba(176,107,255,0.3); }
-  .card.legendaire .card-avatar { border-color: rgba(255,184,48,0.7); box-shadow: 0 0 14px rgba(255,184,48,0.3); }
-  .card.mythique .card-avatar { border-color: rgba(255,45,85,0.7); box-shadow: 0 0 16px rgba(255,45,85,0.4), 0 0 32px rgba(255,45,85,0.15); animation: avatarMythique 3s ease-in-out infinite; }
-  @keyframes avatarMythique { 0%,100%{box-shadow:0 0 16px rgba(255,45,85,0.4),0 0 32px rgba(255,45,85,0.15)} 50%{box-shadow:0 0 24px rgba(255,45,85,0.65),0 0 48px rgba(255,45,85,0.25)} }
+  /* ── Zone bas : fond coloré avec nom + desc ── */
+  .card-body {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 8px 10px 9px;
+    position: relative; z-index: 5;
+  }
+  .card.rare      .card-body { background: linear-gradient(170deg, #0d2855 0%, #071a45 100%); }
+  .card.epique    .card-body { background: linear-gradient(170deg, #200850 0%, #0a0220 100%); }
+  .card.legendaire .card-body { background: linear-gradient(170deg, #2a1500 0%, #110800 100%); }
+  .card.mythique  .card-body { background: linear-gradient(170deg, #2a0515 0%, #0d0108 100%); }
 
-  .card-body { padding: 0 10px 14px; position: relative; z-index: 5; }
-  .card-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 3px; }
-  .card.mythique .card-name { text-shadow: 0 0 12px rgba(255,45,85,0.5); }
-  .card-role { font-size: 10.5px; color: rgba(255,255,255,0.7); font-style: italic; margin-bottom: 3px; }
-  .card-desc { font-size: 10px; color: rgba(255,255,255,0.55); line-height: 1.4; }
+  /* reflet lumineux en haut du body */
+  .card-body::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40px;
+    pointer-events: none; z-index: 0;
+  }
+  .card.rare      .card-body::before { background: linear-gradient(to bottom, rgba(74,158,255,0.18), transparent); }
+  .card.epique    .card-body::before { background: linear-gradient(to bottom, rgba(176,107,255,0.2), transparent); }
+  .card.legendaire .card-body::before { background: linear-gradient(to bottom, rgba(255,184,48,0.25), transparent); }
+  .card.mythique  .card-body::before { background: linear-gradient(to bottom, rgba(255,45,85,0.22), transparent); }
 
-  .card-count-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; padding: 1px 7px; z-index: 10; backdrop-filter: blur(4px); }
+  .card-name {
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800;
+    color: #fff; line-height: 1.2; margin-bottom: 3px; position: relative; z-index: 1;
+  }
+  .card.mythique .card-name { text-shadow: 0 0 10px rgba(255,45,85,0.5); }
+
+  .card-role {
+    font-size: 9.5px; color: rgba(255,255,255,0.6); font-style: italic;
+    margin-bottom: 3px; position: relative; z-index: 1;
+  }
+  .card-desc {
+    font-size: 9px; color: rgba(255,255,255,0.5); line-height: 1.4;
+    position: relative; z-index: 1;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* ── Stats en bas ── */
+  .card-stats {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px 8px; border-top: 1px solid rgba(255,255,255,0.1);
+    position: relative; z-index: 5; gap: 4px;
+  }
+  .card.rare      .card-stats { background: rgba(7,26,69,0.9); }
+  .card.epique    .card-stats { background: rgba(10,2,32,0.9); }
+  .card.legendaire .card-stats { background: rgba(17,8,0,0.9); }
+  .card.mythique  .card-stats { background: rgba(13,1,8,0.9); }
+
+  .card-stat {
+    display: flex; align-items: center; gap: 4px;
+    font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 800;
+    color: rgba(255,255,255,0.85);
+  }
+  .card-stat .stat-icon { font-size: 11px; }
+  .card.legendaire .card-stat { color: #ffe99a; }
+  .card.mythique   .card-stat { color: #ff9aaa; }
+
+  .card-count-badge {
+    position: absolute; top: 36px; left: 8px;
+    background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff;
+    padding: 1px 7px; z-index: 10; backdrop-filter: blur(4px);
+  }
 
   /* COLLECTION */
   .section-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 1.25rem; }
@@ -573,13 +606,14 @@
     transform: translateY(0) scale(1);
   }
   .card-modal .card {
-    width: 220px;
-    height: 308px;
+    width: 240px;
+    height: 356px;
     flex-shrink: 0;
     cursor: default;
   }
   .card-modal .card:hover { transform: none; }
-  .card-modal .card-avatar { width: 120px; height: 120px; font-size: 42px; }
+  .card-modal .card-photo { height: 175px; }
+  .card-modal .card-photo-initials { font-size: 56px; }
   .card-modal-info {
     flex: 1;
     min-width: 0;
@@ -648,8 +682,9 @@
   .card-modal-close:hover { background: var(--surface3); color: var(--text); border-color: rgba(255,255,255,0.25); }
   @media (max-width: 600px) {
     .card-modal { flex-direction: column; align-items: center; gap: 1.5rem; overflow-y: auto; max-height: 90vh; }
-    .card-modal .card { width: 180px; height: 252px; }
-    .card-modal .card-avatar { width: 96px; height: 96px; font-size: 32px; }
+    .card-modal .card { width: 190px; height: 282px; }
+    .card-modal .card-photo { height: 138px; }
+    .card-modal .card-photo-initials { font-size: 42px; }
     .card-modal-name { font-size: 22px; }
   }
 </style>
@@ -1214,27 +1249,29 @@ function makeCardEl(c, count) {
   const div = document.createElement('div');
   div.className = 'card ' + (c.rarity || 'rare');
   div.onclick = () => openCardModal(c);
+
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
   const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
   const badge  = labels[c.rarity] || 'Rare';
   const star   = stars[c.rarity]  || '☆';
 
-  const av = c.image
+  // Zone photo
+  const photoContent = c.image
     ? `<img src="${c.image}" alt="${escapeHtml(c.name)}" />`
-    : escapeHtml(c.initials || (c.name || '?').slice(0, 2).toUpperCase());
+    : `<div class="card-photo-initials">${escapeHtml(c.initials || (c.name || '?').slice(0, 2).toUpperCase())}</div>`;
 
-  const pwr = parseInt((c.power || '').replace(/\D/g, '')) || Math.floor(Math.random() * 5000 + 1000);
-  const lck = Math.floor(Math.random() * 5000 + 500);
+  // Stats
+  const pwr = parseInt((c.power || '').replace(/\D/g, '')) || Math.floor(Math.random() * 9000 + 1000);
+  const lck = Math.floor(Math.random() * 9000 + 500);
 
+  // Particules mythique
   let starsHTML = '';
   if (c.rarity === 'mythique') {
     starsHTML = '<div class="card-stars">';
     for (let i = 0; i < 12; i++) {
-      const x   = (Math.random() * 90 + 5).toFixed(1);
-      const y   = (Math.random() * 100).toFixed(1);
-      const dur = (2 + Math.random() * 2).toFixed(1);
-      const delay = (Math.random() * 3).toFixed(1);
-      const sz  = Math.random() > 0.5 ? 2 : 3;
+      const x = (Math.random()*90+5).toFixed(1), y = (Math.random()*100).toFixed(1);
+      const dur = (2+Math.random()*2).toFixed(1), delay = (Math.random()*3).toFixed(1);
+      const sz = Math.random()>0.5?2:3;
       starsHTML += `<div class="star-particle" style="left:${x}%;top:${y}%;width:${sz}px;height:${sz}px;--dur:${dur}s;--delay:${delay}s"></div>`;
     }
     starsHTML += '</div>';
@@ -1245,20 +1282,23 @@ function makeCardEl(c, count) {
   div.innerHTML = `
     ${count ? `<div class="card-count-badge">x${count}</div>` : ''}
     ${mythBorder}
-    <div class="card-rays"></div>
-    <div class="card-shine"></div>
     ${starsHTML}
+    <div class="card-photo">
+      ${photoContent}
+      <div class="card-photo-fade"></div>
+    </div>
     <div class="card-top">
       <div class="rarity-badge">${badge}</div>
       <div class="card-star">${star}</div>
-    </div>
-    <div class="card-avatar-wrap">
-      <div class="card-avatar">${av}</div>
     </div>
     <div class="card-body">
       <div class="card-name">${escapeHtml(c.name || '?')}</div>
       ${c.role ? `<div class="card-role">${escapeHtml(c.role)}</div>` : ''}
       ${c.desc ? `<div class="card-desc">${escapeHtml(c.desc)}</div>` : ''}
+    </div>
+    <div class="card-stats">
+      <div class="card-stat"><span class="stat-icon">⚔️</span>${pwr}</div>
+      <div class="card-stat"><span class="stat-icon">🛡️</span>${lck}</div>
     </div>
   `;
   return div;
