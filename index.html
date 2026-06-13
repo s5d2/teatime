@@ -71,35 +71,18 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { font-size: 13px; color: var(--muted); }
-
-  /* SETUP SCREEN */
-  #screen-setup {
-    min-height: 100vh;
+  .loading-retry {
+    margin-top: 0.5rem;
+    font-size: 13px;
+    color: var(--epique);
+    cursor: pointer;
+    background: none;
+    border: 1px solid rgba(176,107,255,0.3);
+    border-radius: var(--radius-xs);
+    padding: 7px 18px;
     display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    padding: 2rem;
   }
-  #screen-setup.active { display: flex; }
-  .setup-box {
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 2rem;
-    width: 100%;
-    max-width: 460px;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-  }
-  .setup-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 0.5rem; }
-  .setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.6; }
-  .setup-step { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom: 0.75rem; font-size: 13px; }
-  .setup-step strong { color: var(--text); display: block; margin-bottom: 4px; }
-  .setup-step a { color: var(--epique); text-decoration: none; }
-  .setup-step a:hover { text-decoration: underline; }
-  .setup-step code { background: rgba(176,107,255,0.12); border: 1px solid rgba(176,107,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 12px; color: #d4a0ff; }
-  .setup-fields { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
+  .loading-retry:hover { background: rgba(176,107,255,0.08); }
 
   /* LOGIN */
   #screen-login {
@@ -488,6 +471,20 @@
   .sync-dot.syncing { background: var(--legendaire); animation: dotPulse 0.8s ease-in-out infinite; }
   .sync-dot.error { background: var(--mythique); }
 
+  /* Error banner */
+  .error-banner {
+    background: rgba(255,45,85,0.08);
+    border: 1px solid rgba(255,45,85,0.25);
+    border-radius: var(--radius-sm);
+    color: #ff8099;
+    font-size: 12px;
+    padding: 8px 14px;
+    text-align: center;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .error-banner.visible { display: block; }
+
   @media (max-width: 500px) {
     .pack-hero h2 { font-size: 22px; }
     nav { padding: 0 1rem; }
@@ -504,42 +501,9 @@
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div class="loading-logo">TeaMasters</div>
-  <div class="loading-spinner"></div>
-  <div class="loading-text">Connexion au serveur...</div>
-</div>
-
-<!-- SETUP (1ère fois) -->
-<div id="screen-setup" class="screen">
-  <div style="text-align:center">
-    <div class="login-logo">TeaMasters</div>
-    <div class="login-tagline" style="margin-top:4px">Configuration initiale</div>
-  </div>
-  <div class="setup-box">
-    <div class="setup-title">⚙️ Setup JSONBin</div>
-    <div class="setup-sub">Il faut juste créer un compte gratuit pour stocker les données en ligne. Suis ces 3 étapes :</div>
-
-    <div class="setup-step">
-      <strong>1. Créer un compte gratuit</strong>
-      Va sur <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> → Sign Up (gratuit, pas de CB)
-    </div>
-    <div class="setup-step">
-      <strong>2. Copier ta clé API</strong>
-      Dashboard → <code>API Keys</code> → copie la clé qui commence par <code>$2b$...</code>
-    </div>
-    <div class="setup-step">
-      <strong>3. Coller ici et valider</strong>
-      La config est sauvegardée dans le code, tes potes n'ont rien à faire.
-    </div>
-
-    <div class="setup-fields">
-      <div class="form-row">
-        <label class="form-label">Clé API JSONBin (commence par $2b$...)</label>
-        <input type="password" id="setup-apikey" placeholder="$2b$10$..." />
-      </div>
-      <div class="error-msg" id="setup-error"></div>
-      <button class="btn-primary" onclick="doSetup()">Valider et lancer le jeu 🚀</button>
-    </div>
-  </div>
+  <div class="loading-spinner" id="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Connexion au serveur...</div>
+  <button class="loading-retry" id="loading-retry" onclick="init()">Réessayer</button>
 </div>
 
 <!-- LOGIN -->
@@ -549,6 +513,9 @@
     <div class="login-tagline">Le jeu de cartes entre potes ✦</div>
   </div>
   <div class="login-box">
+    <div class="error-banner" id="offline-banner">
+      ⚠️ Mode hors-ligne — la progression ne sera pas sauvegardée
+    </div>
     <div class="form-row">
       <label class="form-label">Ton pseudo</label>
       <input type="text" id="login-name" placeholder="Ex : Kévin, Sarah..." />
@@ -696,11 +663,10 @@
 
 <script>
 // ─── API PROXY (Vercel serverless) ───────────────────────────────────────────
-// Toutes les requêtes passent par /api/db — la clé JSONbin reste côté serveur.
 
 async function apiGet() {
   const r = await fetch('/api/db');
-  if (!r.ok) throw new Error('apiGet failed ' + r.status);
+  if (!r.ok) throw new Error('Erreur serveur ' + r.status);
   return r.json();
 }
 
@@ -710,19 +676,14 @@ async function apiPut(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!r.ok) throw new Error('apiPut failed ' + r.status);
-  return r.json();
-}
-
-async function apiInit() {
-  const r = await fetch('/api/db', { method: 'POST' });
-  if (!r.ok) throw new Error('apiInit failed ' + r.status);
+  if (!r.ok) throw new Error('Erreur sauvegarde ' + r.status);
   return r.json();
 }
 
 // ─── DB EN MÉMOIRE ───────────────────────────────────────────────────────────
 let DB = { cards: [], users: {}, adminPass: 'admin123' };
 let syncTimeout = null;
+let isOffline = false;
 
 function setSyncState(state) {
   const dot = document.getElementById('sync-dot');
@@ -734,17 +695,18 @@ async function loadDB() {
   try {
     setSyncState('syncing');
     const data = await apiGet();
-    // _noBin = JSONBIN_BIN_ID pas encore configuré sur Vercel
-    // On démarre avec DB vide sans bloquer
+    // _noBin = JSONBIN_BIN_ID pas encore configuré — on démarre avec DB vide
     DB = data._noBin ? { cards: [], users: {}, adminPass: 'admin123' } : data;
     if (!DB.cards) DB.cards = [];
     if (!DB.users) DB.users = {};
     if (!DB.adminPass) DB.adminPass = 'admin123';
     setSyncState('ok');
+    isOffline = false;
     return true;
   } catch(e) {
     setSyncState('error');
-    console.error('loadDB error', e);
+    console.error('loadDB error:', e.message);
+    isOffline = true;
     return false;
   }
 }
@@ -755,6 +717,7 @@ function scheduleSave() {
 }
 
 async function saveDB() {
+  if (isOffline) return; // Pas de sauvegarde si hors-ligne
   try {
     setSyncState('syncing');
     await apiPut(DB);
@@ -762,7 +725,7 @@ async function saveDB() {
   } catch(e) {
     setSyncState('error');
     showToast('⚠️ Erreur de sauvegarde !');
-    console.error('saveDB error', e);
+    console.error('saveDB error:', e.message);
   }
 }
 
@@ -772,6 +735,9 @@ function saveCards(c) { DB.cards = c; scheduleSave(); }
 function getAdminPass() { return DB.adminPass || 'admin123'; }
 function getUserData(n) {
   if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 5, timerEnd: null };
+  // Garantit que les champs existent même sur un user ancien
+  if (typeof DB.users[n].packsLeft !== 'number') DB.users[n].packsLeft = 5;
+  if (!DB.users[n].collection) DB.users[n].collection = [];
   return DB.users[n];
 }
 function saveUserData(n, d) { DB.users[n] = d; scheduleSave(); }
@@ -783,12 +749,30 @@ function showScreen(name) {
 }
 
 async function init() {
+  // Réinitialise l'état du loading
+  document.getElementById('loading-text').textContent = 'Connexion au serveur...';
+  document.getElementById('loading-spinner').style.display = '';
+  document.getElementById('loading-retry').style.display = 'none';
   showScreen('loading');
+
   const ok = await loadDB();
+
   if (!ok) {
-    document.querySelector('.loading-text').textContent = '❌ Erreur de connexion. Vérifie ta config Vercel.';
+    // FIX PRINCIPAL : on ne bloque plus sur l'écran de chargement
+    // On affiche un bouton retry et on passe quand même au login en mode hors-ligne
+    document.getElementById('loading-text').textContent = '⚠️ Impossible de joindre le serveur.';
+    document.getElementById('loading-spinner').style.display = 'none';
+    document.getElementById('loading-retry').style.display = '';
+
+    // On attend 2s puis on passe au login en mode hors-ligne
+    setTimeout(() => {
+      document.getElementById('offline-banner').classList.add('visible');
+      showScreen('login');
+    }, 2000);
     return;
   }
+
+  document.getElementById('offline-banner').classList.remove('visible');
   showScreen('login');
 }
 
@@ -810,30 +794,36 @@ async function doLogin() {
   if (!name) { err.textContent = 'Entre ton pseudo !'; return; }
   if (pass && pass !== getAdminPass()) { err.textContent = 'Mauvais mot de passe admin.'; return; }
   err.textContent = '';
-  isAdmin = pass === getAdminPass() && pass !== '';
+  isAdmin = pass !== '' && pass === getAdminPass();
   currentUser = name;
 
-  // Recharger les données fraîches avant d'entrer
+  // Recharger les données fraîches avant d'entrer (sans bloquer si ça échoue)
   await loadDB();
 
   showScreen('app');
   document.getElementById('nav-user').textContent = name;
-  if (isAdmin) document.getElementById('admin-tab').style.display = '';
-  else document.getElementById('admin-tab').style.display = 'none';
+  document.getElementById('admin-tab').style.display = isAdmin ? '' : 'none';
   initPackPage();
   renderCollection();
   if (isAdmin) renderAdminList();
 }
 
 function logout() {
-  currentUser = null; isAdmin = false;
+  currentUser = null;
+  isAdmin = false;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
   showScreen('login');
   document.getElementById('admin-tab').style.display = 'none';
   document.getElementById('admin-pass-row').classList.remove('visible');
   document.getElementById('login-pass').value = '';
   document.getElementById('login-name').value = '';
-  if (timerInterval) clearInterval(timerInterval);
-  showPage('packs', document.querySelector('.nav-tab'));
+  // Retour sur l'onglet packs pour la prochaine session
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-packs').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+  document.getElementById('reveal-section').classList.remove('visible');
 }
 
 function showPage(id, btn) {
@@ -846,102 +836,164 @@ function showPage(id, btn) {
 }
 
 // ─── PACKS ───────────────────────────────────────────────────────────────────
-function initPackPage() { const ud = getUserData(currentUser); checkTimer(ud); updatePackDisplay(ud); }
+function initPackPage() {
+  const ud = getUserData(currentUser);
+  checkTimer(ud);
+  updatePackDisplay(ud);
+}
 
 function checkTimer(ud) {
   if (!ud.timerEnd) return;
-  if (Date.now() >= ud.timerEnd) { ud.packsLeft = 5; ud.timerEnd = null; saveUserData(currentUser, ud); }
+  if (Date.now() >= ud.timerEnd) {
+    ud.packsLeft = 5;
+    ud.timerEnd = null;
+    saveUserData(currentUser, ud);
+  }
 }
 
 function updatePackDisplay(ud) {
   document.getElementById('packs-left-display').textContent = ud.packsLeft;
   const pv = document.getElementById('pack-visual');
-  if (ud.packsLeft > 0) { pv.classList.remove('empty'); pv.onclick = openPack; }
-  else { pv.classList.add('empty'); pv.onclick = null; }
+  if (ud.packsLeft > 0) {
+    pv.classList.remove('empty');
+    pv.onclick = openPack;
+  } else {
+    pv.classList.add('empty');
+    pv.onclick = null;
+  }
   const cards = getCards();
   document.getElementById('no-cards-warning').style.display = cards.length === 0 ? 'block' : 'none';
-  if (ud.timerEnd) { document.getElementById('timer-chip').style.display = ''; startTimerDisplay(ud.timerEnd); }
-  else { document.getElementById('timer-chip').style.display = 'none'; if (timerInterval) clearInterval(timerInterval); }
+  if (ud.timerEnd) {
+    document.getElementById('timer-chip').style.display = '';
+    startTimerDisplay(ud.timerEnd);
+  } else {
+    document.getElementById('timer-chip').style.display = 'none';
+    if (timerInterval) clearInterval(timerInterval);
+  }
 }
 
 function startTimerDisplay(endTime) {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     const left = Math.max(0, endTime - Date.now());
-    const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+    const m = Math.floor(left / 60000);
+    const s = Math.floor((left % 60000) / 1000);
     document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2, '0');
     if (left <= 0) {
       clearInterval(timerInterval);
-      const ud = getUserData(currentUser); ud.packsLeft = 5; ud.timerEnd = null;
-      saveUserData(currentUser, ud); updatePackDisplay(ud); showToast('🎴 Packs rechargés !');
+      timerInterval = null;
+      const ud = getUserData(currentUser);
+      ud.packsLeft = 5;
+      ud.timerEnd = null;
+      saveUserData(currentUser, ud);
+      updatePackDisplay(ud);
+      showToast('🎴 Packs rechargés !');
     }
   }, 1000);
 }
 
 function weightedPick(cards) {
-  const by = { mythique: cards.filter(c => c.rarity === 'mythique'), legendaire: cards.filter(c => c.rarity === 'legendaire'), epique: cards.filter(c => c.rarity === 'epique'), rare: cards.filter(c => c.rarity === 'rare') };
+  const by = {
+    mythique:   cards.filter(c => c.rarity === 'mythique'),
+    legendaire: cards.filter(c => c.rarity === 'legendaire'),
+    epique:     cards.filter(c => c.rarity === 'epique'),
+    rare:       cards.filter(c => c.rarity === 'rare')
+  };
   const roll = Math.random() * 100;
   let rarity = roll < 4 ? 'mythique' : roll < 16 ? 'legendaire' : roll < 38 ? 'epique' : 'rare';
   let pool = by[rarity];
-  if (!pool || !pool.length) { for (const r of ['mythique', 'legendaire', 'epique', 'rare']) { if (by[r] && by[r].length) { pool = by[r]; break; } } }
+  // Fallback si la rareté tirée n'a pas de cartes
+  if (!pool || !pool.length) {
+    for (const r of ['mythique', 'legendaire', 'epique', 'rare']) {
+      if (by[r] && by[r].length) { pool = by[r]; break; }
+    }
+  }
   if (!pool || !pool.length) return null;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// Verrou pour éviter les doubles clics sur "Ouvrir"
+let packOpening = false;
+
 async function openPack() {
+  if (packOpening) return;
+  packOpening = true;
+
   // Refresh DB pour avoir les dernières cartes ajoutées par l'admin
   await loadDB();
-  const ud = getUserData(currentUser); checkTimer(ud);
+
+  const ud = getUserData(currentUser);
+  checkTimer(ud);
   const cards = getCards();
-  if (!cards.length) { showToast('Aucune carte dispo !'); return; }
-  if (ud.packsLeft <= 0) { showToast('Plus de packs ! Attends la recharge.'); return; }
+
+  if (!cards.length) { showToast('Aucune carte dispo !'); packOpening = false; return; }
+  if (ud.packsLeft <= 0) { showToast('Plus de packs ! Attends la recharge.'); packOpening = false; return; }
+
   ud.packsLeft--;
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 10 * 60 * 1000;
+
   const drawn = [];
-  for (let i = 0; i < 5; i++) { const c = weightedPick(cards); if (c) drawn.push(c); }
+  for (let i = 0; i < 5; i++) {
+    const c = weightedPick(cards);
+    if (c) drawn.push(c);
+  }
+
   drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
-  saveUserData(currentUser, ud); updatePackDisplay(ud);
+  saveUserData(currentUser, ud);
+  updatePackDisplay(ud);
 
   const grid = document.getElementById('reveal-cards');
   grid.innerHTML = '';
   drawn.forEach((c, i) => {
     const el = makeCardEl(c);
-    el.style.opacity = '0'; el.style.transform = 'translateY(20px) scale(0.95)';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px) scale(0.95)';
     grid.appendChild(el);
     setTimeout(() => {
       el.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
-      el.style.opacity = '1'; el.style.transform = '';
+      el.style.opacity = '1';
+      el.style.transform = '';
     }, 80 * i);
   });
   document.getElementById('reveal-section').classList.add('visible');
+
   const hasMythique = drawn.some(c => c.rarity === 'mythique');
   showToast(hasMythique ? '✦ MYTHIQUE ! Incroyable !' : '🎴 Pack ouvert !');
+
+  packOpening = false;
 }
 
 function makeCardEl(c, count) {
   const div = document.createElement('div');
-  div.className = 'card ' + (c.rarity || '');
+  div.className = 'card ' + (c.rarity || 'rare');
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
-  const stars = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
+  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
   const badge = labels[c.rarity] || 'Rare';
-  const star = stars[c.rarity] || '☆';
-  let av = c.image ? `<img src="${c.image}" alt="${c.name}" />` : (c.initials || (c.name || '?').slice(0, 2).toUpperCase());
+  const star  = stars[c.rarity]  || '☆';
+
+  const av = c.image
+    ? `<img src="${c.image}" alt="${escapeHtml(c.name)}" />`
+    : escapeHtml(c.initials || (c.name || '?').slice(0, 2).toUpperCase());
+
   const pwr = parseInt((c.power || '').replace(/\D/g, '')) || Math.floor(Math.random() * 5000 + 1000);
   const lck = Math.floor(Math.random() * 5000 + 500);
+
   let starsHTML = '';
   if (c.rarity === 'mythique') {
     starsHTML = '<div class="card-stars">';
     for (let i = 0; i < 12; i++) {
-      const x = (Math.random() * 90 + 5).toFixed(1);
-      const y = (Math.random() * 100).toFixed(1);
+      const x   = (Math.random() * 90 + 5).toFixed(1);
+      const y   = (Math.random() * 100).toFixed(1);
       const dur = (2 + Math.random() * 2).toFixed(1);
       const delay = (Math.random() * 3).toFixed(1);
-      const sz = Math.random() > 0.5 ? 2 : 3;
+      const sz  = Math.random() > 0.5 ? 2 : 3;
       starsHTML += `<div class="star-particle" style="left:${x}%;top:${y}%;width:${sz}px;height:${sz}px;--dur:${dur}s;--delay:${delay}s"></div>`;
     }
     starsHTML += '</div>';
   }
+
   const mythBorder = c.rarity === 'mythique' ? '<div class="mythique-border"></div>' : '';
+
   div.innerHTML = `
     ${count ? `<div class="card-count-badge">x${count}</div>` : ''}
     ${mythBorder}
@@ -955,9 +1007,9 @@ function makeCardEl(c, count) {
       <div class="card-avatar">${av}</div>
     </div>
     <div class="card-body">
-      <div class="card-name">${c.name || '?'}</div>
-      ${c.role ? `<div class="card-role">${c.role}</div>` : ''}
-      ${c.desc ? `<div class="card-desc">${c.desc}</div>` : ''}
+      <div class="card-name">${escapeHtml(c.name || '?')}</div>
+      ${c.role ? `<div class="card-role">${escapeHtml(c.role)}</div>` : ''}
+      ${c.desc ? `<div class="card-desc">${escapeHtml(c.desc)}</div>` : ''}
     </div>
     <div class="card-stats">
       <div class="card-stat"><span class="stat-icon">💥</span>${pwr}</div>
@@ -967,11 +1019,23 @@ function makeCardEl(c, count) {
   return div;
 }
 
+// Sécurité : évite les injections HTML dans les champs utilisateur
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 let collFilter = 'all';
 function filterColl(f, btn) {
   collFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique'));
-  if (btn) { btn.classList.add('active'); if (f === 'mythique') btn.classList.add('active-mythique'); }
+  if (btn) {
+    btn.classList.add('active');
+    if (f === 'mythique') btn.classList.add('active-mythique');
+  }
   renderCollection();
 }
 
@@ -979,13 +1043,20 @@ function renderCollection() {
   if (!currentUser) return;
   const ud = getUserData(currentUser);
   const coll = ud.collection || [];
+
   const counts = {};
-  coll.forEach(c => { const k = c.name + '_' + c.rarity; if (!counts[k]) counts[k] = { card: c, n: 0 }; counts[k].n++; });
+  coll.forEach(c => {
+    const k = c.name + '_' + c.rarity;
+    if (!counts[k]) counts[k] = { card: c, n: 0 };
+    counts[k].n++;
+  });
+
   const total = coll.length;
-  const rares = coll.filter(c => c.rarity === 'rare').length;
-  const epiques = coll.filter(c => c.rarity === 'epique').length;
-  const legendaires = coll.filter(c => c.rarity === 'legendaire').length;
-  const mythiques = coll.filter(c => c.rarity === 'mythique').length;
+  const rares      = coll.filter(c => c.rarity === 'rare').length;
+  const epiques    = coll.filter(c => c.rarity === 'epique').length;
+  const legendaires= coll.filter(c => c.rarity === 'legendaire').length;
+  const mythiques  = coll.filter(c => c.rarity === 'mythique').length;
+
   document.getElementById('coll-stats').innerHTML = `
     <div class="stat-chip"><span class="n">${total}</span><span class="lbl">Total</span></div>
     <div class="stat-chip"><span class="n badge-rare">${rares}</span><span class="lbl">Rares</span></div>
@@ -993,19 +1064,36 @@ function renderCollection() {
     <div class="stat-chip"><span class="n badge-legendaire">${legendaires}</span><span class="lbl">Légendaires</span></div>
     <div class="stat-chip"><span class="n badge-mythique">${mythiques}</span><span class="lbl">Mythiques</span></div>
   `;
+
   const grid = document.getElementById('coll-grid');
   grid.innerHTML = '';
-  const filtered = Object.values(counts).filter(({ card }) => collFilter === 'all' || card.rarity === collFilter);
-  filtered.sort((a, b) => { const o = { mythique: 0, legendaire: 1, epique: 2, rare: 3 }; return (o[a.card.rarity] || 4) - (o[b.card.rarity] || 4); });
-  if (!filtered.length) { grid.innerHTML = '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>'; return; }
+
+  const filtered = Object.values(counts).filter(({ card }) =>
+    collFilter === 'all' || card.rarity === collFilter
+  );
+  filtered.sort((a, b) => {
+    const o = { mythique: 0, legendaire: 1, epique: 2, rare: 3 };
+    return (o[a.card.rarity] ?? 4) - (o[b.card.rarity] ?? 4);
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>';
+    return;
+  }
   filtered.forEach(({ card, n }) => grid.appendChild(makeCardEl(card, n > 1 ? n : null)));
 }
 
 function previewImage(input) {
-  const preview = document.getElementById('img-preview'), text = document.getElementById('img-preview-text');
+  const preview = document.getElementById('img-preview');
+  const text = document.getElementById('img-preview-text');
   if (input.files && input.files[0]) {
     const reader = new FileReader();
-    reader.onload = e => { text.style.display = 'none'; let img = preview.querySelector('img'); if (!img) { img = document.createElement('img'); preview.insertBefore(img, input); } img.src = e.target.result; };
+    reader.onload = e => {
+      text.style.display = 'none';
+      let img = preview.querySelector('img');
+      if (!img) { img = document.createElement('img'); preview.insertBefore(img, input); }
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(input.files[0]);
   }
 }
@@ -1013,30 +1101,53 @@ function previewImage(input) {
 async function addCard() {
   const name = document.getElementById('a-name').value.trim();
   if (!name) { showToast('Donne un nom !'); return; }
+
   const imgFile = document.getElementById('a-image').files[0];
   const btn = document.querySelector('#page-admin .btn-primary');
-  btn.disabled = true; btn.textContent = 'Ajout en cours...';
+  btn.disabled = true;
+  btn.textContent = 'Ajout en cours...';
+
   const finalize = async img => {
     const card = {
-      id: Date.now(), name,
-      role: document.getElementById('a-role').value.trim(),
-      desc: document.getElementById('a-desc').value.trim(),
-      rarity: document.getElementById('a-rarity').value,
+      id: Date.now(),
+      name,
+      role:     document.getElementById('a-role').value.trim(),
+      desc:     document.getElementById('a-desc').value.trim(),
+      rarity:   document.getElementById('a-rarity').value,
       initials: (document.getElementById('a-initials').value.trim() || name.slice(0, 2)).toUpperCase(),
-      power: document.getElementById('a-power').value.trim(),
-      image: img || null
+      power:    document.getElementById('a-power').value.trim(),
+      image:    img || null
     };
-    const cards = getCards(); cards.push(card); saveCards(cards);
-    await saveDB(); // sauvegarde immédiate pour que les potes voient la carte
+    const cards = getCards();
+    cards.push(card);
+    saveCards(cards);
+    await saveDB(); // Sauvegarde immédiate pour que les potes voient la carte
+
     renderAdminList();
     showToast('Carte "' + name + '" ajoutée et déployée ! ✅');
-    ['a-name', 'a-role', 'a-desc', 'a-power', 'a-initials', 'a-image'].forEach(id => document.getElementById(id).value = '');
-    const prev = document.getElementById('img-preview'), ex = prev.querySelector('img');
-    if (ex) ex.remove(); document.getElementById('img-preview-text').style.display = '';
-    btn.disabled = false; btn.textContent = 'Ajouter la carte';
+
+    // Reset du formulaire
+    ['a-name', 'a-role', 'a-desc', 'a-power', 'a-initials'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('a-image').value = '';
+    const prev = document.getElementById('img-preview');
+    const ex = prev.querySelector('img');
+    if (ex) ex.remove();
+    document.getElementById('img-preview-text').style.display = '';
+
+    btn.disabled = false;
+    btn.textContent = 'Ajouter la carte';
   };
-  if (imgFile) { const r = new FileReader(); r.onload = e => finalize(e.target.result); r.readAsDataURL(imgFile); }
-  else await finalize(null);
+
+  if (imgFile) {
+    const r = new FileReader();
+    r.onload = e => finalize(e.target.result);
+    r.onerror = () => { showToast('Erreur lecture image'); btn.disabled = false; btn.textContent = 'Ajouter la carte'; };
+    r.readAsDataURL(imgFile);
+  } else {
+    await finalize(null);
+  }
 }
 
 async function deleteCard(id) {
@@ -1049,13 +1160,33 @@ async function deleteCard(id) {
 function renderAdminList() {
   const cards = getCards();
   document.getElementById('card-count').textContent = cards.length;
-  const list = document.getElementById('admin-card-list'); list.innerHTML = '';
-  if (!cards.length) { list.innerHTML = '<div class="no-cards-msg">Aucune carte pour l\'instant.</div>'; return; }
-  const lbls = { legendaire: '<span class="badge-legendaire">Légendaire</span>', epique: '<span class="badge-epique">Épique</span>', rare: '<span class="badge-rare">Rare</span>', mythique: '<span class="badge-mythique">✦ Mythique</span>' };
+  const list = document.getElementById('admin-card-list');
+  list.innerHTML = '';
+  if (!cards.length) {
+    list.innerHTML = '<div class="no-cards-msg">Aucune carte pour l\'instant.</div>';
+    return;
+  }
+  const lbls = {
+    legendaire: '<span class="badge-legendaire">Légendaire</span>',
+    epique:     '<span class="badge-epique">Épique</span>',
+    rare:       '<span class="badge-rare">Rare</span>',
+    mythique:   '<span class="badge-mythique">✦ Mythique</span>'
+  };
   cards.forEach(c => {
-    const div = document.createElement('div'); div.className = 'admin-card-item';
-    const av = c.image ? `<img src="${c.image}" alt="${c.name}" />` : (c.initials || c.name.slice(0, 2).toUpperCase());
-    div.innerHTML = `<div class="rarity-dot ${c.rarity}"></div><div class="admin-avatar ${c.rarity}">${av}</div><div class="admin-card-info"><div class="admin-card-name">${c.name}</div><div class="admin-card-meta">${lbls[c.rarity] || lbls.rare}${c.role ? ' · ' + c.role : ''}</div></div><button class="btn-icon" onclick="deleteCard(${c.id})" title="Supprimer">✕</button>`;
+    const div = document.createElement('div');
+    div.className = 'admin-card-item';
+    const av = c.image
+      ? `<img src="${c.image}" alt="${escapeHtml(c.name)}" />`
+      : escapeHtml(c.initials || c.name.slice(0, 2).toUpperCase());
+    div.innerHTML = `
+      <div class="rarity-dot ${c.rarity}"></div>
+      <div class="admin-avatar ${c.rarity}">${av}</div>
+      <div class="admin-card-info">
+        <div class="admin-card-name">${escapeHtml(c.name)}</div>
+        <div class="admin-card-meta">${lbls[c.rarity] || lbls.rare}${c.role ? ' · ' + escapeHtml(c.role) : ''}</div>
+      </div>
+      <button class="btn-icon" onclick="deleteCard(${c.id})" title="Supprimer">✕</button>
+    `;
     list.appendChild(div);
   });
 }
@@ -1070,9 +1201,13 @@ async function changeAdminPass() {
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+// Raccourcis clavier
 document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 </script>
