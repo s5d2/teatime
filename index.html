@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta name="version" content="v3">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TeaMasters</title>
@@ -47,11 +46,14 @@
   /* LOADING SCREEN */
   #screen-loading {
     min-height: 100vh;
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 1.5rem;
+  }
+  #screen-loading.active {
+    display: flex;
   }
   .loading-logo {
     font-family: 'Syne', sans-serif;
