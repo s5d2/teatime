@@ -900,7 +900,7 @@
       <div class="coll-filter-wrap">
         <div class="coll-filter">
           <button class="filter-btn active" onclick="filterColl('all', this)">Toutes</button>
-          <button class="filter-btn" onclick="filterColl('mythique', this)">✦ Mythiques</button>
+          <button class="filter-btn" onclick="filterColl('mythique', this)">Mythiques</button>
           <button class="filter-btn" onclick="filterColl('legendaire', this)">Légendaires</button>
           <button class="filter-btn" onclick="filterColl('epique', this)">Épiques</button>
           <button class="filter-btn" onclick="filterColl('rare', this)">Rares</button>
@@ -934,7 +934,7 @@
                 <option value="rare">Rare</option>
                 <option value="epique">Épique</option>
                 <option value="legendaire">Légendaire</option>
-                <option value="mythique">✦ Mythique</option>
+                <option value="mythique">Mythique</option>
               </select>
             </div>
             <div class="form-row">
@@ -1431,7 +1431,7 @@ function makeCardEl(c, count) {
   if (c.id) div.dataset.cardId = c.id;
   div.onclick = () => openCardModal(c);
 
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique' };
   const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
   const badge  = labels[c.rarity] || 'Rare';
   const star   = stars[c.rarity]  || '☆';
@@ -1483,7 +1483,7 @@ function makeCardEl(c, count) {
 
 // ─── CARD MODAL ───────────────────────────────────────────────────────────────
 function openCardModal(c, fromCollection) {
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique' };
 
   // Carte visuelle en grand
   const cardEl = makeCardEl(c);
@@ -1711,7 +1711,7 @@ function renderAdminList() {
     legendaire: '<span class="badge-legendaire">Légendaire</span>',
     epique:     '<span class="badge-epique">Épique</span>',
     rare:       '<span class="badge-rare">Rare</span>',
-    mythique:   '<span class="badge-mythique">✦ Mythique</span>'
+    mythique:   '<span class="badge-mythique">Mythique</span>'
   };
   cards.forEach(c => {
     const div = document.createElement('div');
@@ -1892,7 +1892,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCardM
           <option value="rare">Rare</option>
           <option value="epique">Épique</option>
           <option value="legendaire">Légendaire</option>
-          <option value="mythique">✦ Mythique</option>
+          <option value="mythique">Mythique</option>
         </select>
       </div>
       <div class="form-row">
