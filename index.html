@@ -1436,10 +1436,7 @@ async function openPack() {
 function makeGhostCardEl() {
   const div = document.createElement('div');
   div.className = 'card-ghost';
-  div.innerHTML = \`
-    <div class="card-ghost-icon">?</div>
-    <div class="card-ghost-text">Vous avez déjà toutes les cartes !</div>
-  \`;
+  div.innerHTML = '<div class="card-ghost-icon">?</div><div class="card-ghost-text">Vous avez déjà toutes les cartes !</div>';
   return div;
 }
 
