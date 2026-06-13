@@ -734,12 +734,9 @@ async function loadDB() {
   try {
     setSyncState('syncing');
     const data = await apiGet();
-    if (data._noBin) {
-      await apiInit();
-      DB = { cards: [], users: {}, adminPass: 'admin123' };
-    } else {
-      DB = data;
-    }
+    // _noBin = JSONBIN_BIN_ID pas encore configuré sur Vercel
+    // On démarre avec DB vide sans bloquer
+    DB = data._noBin ? { cards: [], users: {}, adminPass: 'admin123' } : data;
     if (!DB.cards) DB.cards = [];
     if (!DB.users) DB.users = {};
     if (!DB.adminPass) DB.adminPass = 'admin123';
