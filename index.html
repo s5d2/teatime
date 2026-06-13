@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TeaMasters</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Inter:wght@400;500&display=swap');
 
@@ -665,25 +666,18 @@
 </div>
 
 <script>
-// ─── API PROXY (Vercel serverless) ───────────────────────────────────────────
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://ihdtodannhhnbejvcjfu.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_sdqNlqTFEdYGgho6Pxqkmg_imnXVTXk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function apiGet() {
-  const r = await fetch('/api/db');
-  if (!r.ok) throw new Error('Erreur serveur ' + r.status);
-  return r.json();
-}
-
-async function apiPut(data) {
-  const r = await fetch('/api/db', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!r.ok) throw new Error('Erreur sauvegarde ' + r.status);
-  return r.json();
-}
-
-// ─── DB EN MÉMOIRE ───────────────────────────────────────────────────────────
+// ─── DB EN MÉMOIRE ────────────────────────────────────────────────────────────
+// Structure locale conservée pour éviter de toucher à toute la logique métier.
+// On mappe sur deux tables Supabase :
+//   cards  : { id, name, role, desc, rarity, initials, power, image, created_at }
+//   users  : { username (PK), collection, packs_left, timer_end, admin_pass_hash }
+// La table "settings" (une seule ligne) stocke le mot de passe admin.
+//   settings : { id (=1), admin_pass }
 let DB = { cards: [], users: {}, adminPass: 'admin123' };
 let syncTimeout = null;
 let isOffline = false;
@@ -694,18 +688,45 @@ function setSyncState(state) {
   dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
 }
 
+// ─── LECTURE ─────────────────────────────────────────────────────────────────
 async function loadDB() {
   try {
     setSyncState('syncing');
-    // Timeout de 5s — si l'API ne répond pas, on passe quand même
-    const data = await Promise.race([
-      apiGet(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-    ]);
-    DB = data._noBin ? { cards: [], users: {}, adminPass: 'admin123' } : data;
-    if (!DB.cards) DB.cards = [];
-    if (!DB.users) DB.users = {};
-    if (!DB.adminPass) DB.adminPass = 'admin123';
+
+    // Séquentiel — évite DataCloneError (Headers non-clonables avec Promise.all)
+    const cardsRes    = await sb.from('cards').select('*').order('created_at', { ascending: true });
+    const usersRes    = await sb.from('users').select('*');
+    const settingsRes = await sb.from('settings').select('*').eq('id', 1).maybeSingle();
+
+    if (cardsRes.error)    throw cardsRes.error;
+    if (usersRes.error)    throw usersRes.error;
+    if (settingsRes.error) throw settingsRes.error;
+
+    // Cartes
+    DB.cards = (cardsRes.data || []).map(r => ({
+      id:       r.id,
+      name:     r.name,
+      role:     r.role     || '',
+      desc:     r.description || '',
+      rarity:   r.rarity   || 'rare',
+      initials: r.initials || '',
+      power:    r.power    || '',
+      image:    r.image_url || null
+    }));
+
+    // Utilisateurs
+    DB.users = {};
+    (usersRes.data || []).forEach(r => {
+      DB.users[r.username] = {
+        collection: r.collection || [],
+        packsLeft:  typeof r.packs_left === 'number' ? r.packs_left : 5,
+        timerEnd:   r.timer_end  || null
+      };
+    });
+
+    // Mot de passe admin
+    DB.adminPass = settingsRes.data?.admin_pass || 'admin123';
+
     setSyncState('ok');
     isOffline = false;
     return true;
@@ -717,36 +738,101 @@ async function loadDB() {
   }
 }
 
-function scheduleSave() {
-  clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(saveDB, 600);
-}
-
-async function saveDB() {
-  if (isOffline) return; // Pas de sauvegarde si hors-ligne
+// ─── ÉCRITURE UTILISATEUR ────────────────────────────────────────────────────
+async function persistUser(username) {
+  if (isOffline) return;
+  const ud = DB.users[username];
+  if (!ud) return;
   try {
     setSyncState('syncing');
-    await apiPut(DB);
+    const { error } = await sb.from('users').upsert({
+      username,
+      collection: ud.collection,
+      packs_left: ud.packsLeft,
+      timer_end:  ud.timerEnd
+    }, { onConflict: 'username' });
+    if (error) throw error;
     setSyncState('ok');
   } catch(e) {
     setSyncState('error');
-    showToast('⚠️ Erreur de sauvegarde !');
-    console.error('saveDB error:', e.message);
+    console.error('persistUser error:', e.message);
   }
 }
 
-// ─── HELPERS DB ──────────────────────────────────────────────────────────────
+// Debounce — on évite d'écrire à chaque frame
+let saveUserTimeout = {};
+function scheduleSaveUser(username) {
+  clearTimeout(saveUserTimeout[username]);
+  saveUserTimeout[username] = setTimeout(() => persistUser(username), 600);
+}
+
+// ─── ÉCRITURE CARTES ─────────────────────────────────────────────────────────
+async function persistCard(card) {
+  if (isOffline) return null;
+  setSyncState('syncing');
+  try {
+    const { data, error } = await sb.from('cards').insert({
+      name:     card.name,
+      role:     card.role     || null,
+      description: card.desc || null,
+      rarity:   card.rarity,
+      initials: card.initials || null,
+      power:    card.power    || null,
+      image_url: card.image || null
+    }).select().single();
+    if (error) throw error;
+    setSyncState('ok');
+    return data;
+  } catch(e) {
+    setSyncState('error');
+    console.error('persistCard error:', e.message);
+    return null;
+  }
+}
+
+async function deleteCardDB(id) {
+  if (isOffline) return;
+  setSyncState('syncing');
+  try {
+    const { error } = await sb.from('cards').delete().eq('id', id);
+    if (error) throw error;
+    setSyncState('ok');
+  } catch(e) {
+    setSyncState('error');
+    console.error('deleteCard error:', e.message);
+  }
+}
+
+// ─── ÉCRITURE SETTINGS ───────────────────────────────────────────────────────
+async function persistAdminPass(pass) {
+  if (isOffline) return;
+  setSyncState('syncing');
+  try {
+    const { error } = await sb.from('settings').upsert({ id: 1, admin_pass: pass }, { onConflict: 'id' });
+    if (error) throw error;
+    setSyncState('ok');
+  } catch(e) {
+    setSyncState('error');
+    console.error('persistAdminPass error:', e.message);
+  }
+}
+
+// ─── HELPERS DB (interface identique à l'ancienne version) ───────────────────
 function getCards() { return DB.cards || []; }
-function saveCards(c) { DB.cards = c; scheduleSave(); }
+
 function getAdminPass() { return DB.adminPass || 'admin123'; }
+
 function getUserData(n) {
   if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 5, timerEnd: null };
-  // Garantit que les champs existent même sur un user ancien
   if (typeof DB.users[n].packsLeft !== 'number') DB.users[n].packsLeft = 5;
   if (!DB.users[n].collection) DB.users[n].collection = [];
   return DB.users[n];
 }
-function saveUserData(n, d) { DB.users[n] = d; scheduleSave(); }
+
+function saveUserData(n, d) {
+  DB.users[n] = d;
+  scheduleSaveUser(n);
+}
 
 // ─── SCREENS ─────────────────────────────────────────────────────────────────
 function showScreen(name) {
@@ -755,21 +841,16 @@ function showScreen(name) {
 }
 
 async function init() {
-  try {
-    showScreen('loading');
-    const ok = await loadDB();
-    if (!ok) {
-      document.getElementById('offline-banner').classList.add('visible');
-    } else {
-      document.getElementById('offline-banner').classList.remove('visible');
-    }
-  } catch(e) {
-    console.error('init error:', e);
+  showScreen('loading');
+  document.getElementById('loading-retry').style.display = 'none';
+  const ok = await loadDB();
+  if (!ok) {
     document.getElementById('offline-banner').classList.add('visible');
-  } finally {
-    // Garanti de s'exécuter quoi qu'il arrive
-    showScreen('login');
+    document.getElementById('loading-retry').style.display = '';
+  } else {
+    document.getElementById('offline-banner').classList.remove('visible');
   }
+  showScreen('login');
 }
 
 init();
@@ -786,14 +867,14 @@ function toggleAdminPass() {
 async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   const pass = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-error');
+  const err  = document.getElementById('login-error');
   if (!name) { err.textContent = 'Entre ton pseudo !'; return; }
   if (pass && pass !== getAdminPass()) { err.textContent = 'Mauvais mot de passe admin.'; return; }
   err.textContent = '';
-  isAdmin = pass !== '' && pass === getAdminPass();
+  isAdmin     = pass !== '' && pass === getAdminPass();
   currentUser = name;
 
-  // Recharger les données fraîches avant d'entrer (sans bloquer si ça échoue)
+  // Refresh DB avant d'entrer
   await loadDB();
 
   showScreen('app');
@@ -806,15 +887,14 @@ async function doLogin() {
 
 function logout() {
   currentUser = null;
-  isAdmin = false;
+  isAdmin     = false;
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
   showScreen('login');
   document.getElementById('admin-tab').style.display = 'none';
   document.getElementById('admin-pass-row').classList.remove('visible');
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-name').value = '';
-  // Retour sur l'onglet packs pour la prochaine session
+  document.getElementById('login-pass').value  = '';
+  document.getElementById('login-name').value  = '';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-packs').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -822,13 +902,14 @@ function logout() {
   document.getElementById('reveal-section').classList.remove('visible');
 }
 
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'collection') renderCollection();
-  if (id === 'admin') renderAdminList();
+  if (id === 'admin')      renderAdminList();
 }
 
 // ─── PACKS ───────────────────────────────────────────────────────────────────
@@ -842,7 +923,7 @@ function checkTimer(ud) {
   if (!ud.timerEnd) return;
   if (Date.now() >= ud.timerEnd) {
     ud.packsLeft = 5;
-    ud.timerEnd = null;
+    ud.timerEnd  = null;
     saveUserData(currentUser, ud);
   }
 }
@@ -878,9 +959,9 @@ function startTimerDisplay(endTime) {
     if (left <= 0) {
       clearInterval(timerInterval);
       timerInterval = null;
-      const ud = getUserData(currentUser);
+      const ud    = getUserData(currentUser);
       ud.packsLeft = 5;
-      ud.timerEnd = null;
+      ud.timerEnd  = null;
       saveUserData(currentUser, ud);
       updatePackDisplay(ud);
       showToast('🎴 Packs rechargés !');
@@ -898,7 +979,6 @@ function weightedPick(cards) {
   const roll = Math.random() * 100;
   let rarity = roll < 4 ? 'mythique' : roll < 16 ? 'legendaire' : roll < 38 ? 'epique' : 'rare';
   let pool = by[rarity];
-  // Fallback si la rareté tirée n'a pas de cartes
   if (!pool || !pool.length) {
     for (const r of ['mythique', 'legendaire', 'epique', 'rare']) {
       if (by[r] && by[r].length) { pool = by[r]; break; }
@@ -908,22 +988,21 @@ function weightedPick(cards) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// Verrou pour éviter les doubles clics sur "Ouvrir"
 let packOpening = false;
 
 async function openPack() {
   if (packOpening) return;
   packOpening = true;
 
-  // Refresh DB pour avoir les dernières cartes ajoutées par l'admin
+  // Refresh cartes pour avoir les dernières ajoutées par l'admin
   await loadDB();
 
-  const ud = getUserData(currentUser);
+  const ud    = getUserData(currentUser);
   checkTimer(ud);
   const cards = getCards();
 
-  if (!cards.length) { showToast('Aucune carte dispo !'); packOpening = false; return; }
-  if (ud.packsLeft <= 0) { showToast('Plus de packs ! Attends la recharge.'); packOpening = false; return; }
+  if (!cards.length)       { showToast('Aucune carte dispo !');            packOpening = false; return; }
+  if (ud.packsLeft <= 0)   { showToast('Plus de packs ! Attends la recharge.'); packOpening = false; return; }
 
   ud.packsLeft--;
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 10 * 60 * 1000;
@@ -942,13 +1021,13 @@ async function openPack() {
   grid.innerHTML = '';
   drawn.forEach((c, i) => {
     const el = makeCardEl(c);
-    el.style.opacity = '0';
+    el.style.opacity   = '0';
     el.style.transform = 'translateY(20px) scale(0.95)';
     grid.appendChild(el);
     setTimeout(() => {
       el.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
-      el.style.opacity = '1';
-      el.style.transform = '';
+      el.style.opacity    = '1';
+      el.style.transform  = '';
     }, 80 * i);
   });
   document.getElementById('reveal-section').classList.add('visible');
@@ -959,13 +1038,14 @@ async function openPack() {
   packOpening = false;
 }
 
+// ─── CARTE HTML ──────────────────────────────────────────────────────────────
 function makeCardEl(c, count) {
   const div = document.createElement('div');
   div.className = 'card ' + (c.rarity || 'rare');
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
   const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
-  const badge = labels[c.rarity] || 'Rare';
-  const star  = stars[c.rarity]  || '☆';
+  const badge  = labels[c.rarity] || 'Rare';
+  const star   = stars[c.rarity]  || '☆';
 
   const av = c.image
     ? `<img src="${c.image}" alt="${escapeHtml(c.name)}" />`
@@ -1015,7 +1095,6 @@ function makeCardEl(c, count) {
   return div;
 }
 
-// Sécurité : évite les injections HTML dans les champs utilisateur
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -1024,7 +1103,9 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ─── COLLECTION ───────────────────────────────────────────────────────────────
 let collFilter = 'all';
+
 function filterColl(f, btn) {
   collFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique'));
@@ -1037,7 +1118,7 @@ function filterColl(f, btn) {
 
 function renderCollection() {
   if (!currentUser) return;
-  const ud = getUserData(currentUser);
+  const ud   = getUserData(currentUser);
   const coll = ud.collection || [];
 
   const counts = {};
@@ -1047,7 +1128,7 @@ function renderCollection() {
     counts[k].n++;
   });
 
-  const total = coll.length;
+  const total      = coll.length;
   const rares      = coll.filter(c => c.rarity === 'rare').length;
   const epiques    = coll.filter(c => c.rarity === 'epique').length;
   const legendaires= coll.filter(c => c.rarity === 'legendaire').length;
@@ -1079,11 +1160,12 @@ function renderCollection() {
   filtered.forEach(({ card, n }) => grid.appendChild(makeCardEl(card, n > 1 ? n : null)));
 }
 
+// ─── IMAGE PREVIEW ───────────────────────────────────────────────────────────
 function previewImage(input) {
   const preview = document.getElementById('img-preview');
-  const text = document.getElementById('img-preview-text');
+  const text    = document.getElementById('img-preview-text');
   if (input.files && input.files[0]) {
-    const reader = new FileReader();
+    const reader  = new FileReader();
     reader.onload = e => {
       text.style.display = 'none';
       let img = preview.querySelector('img');
@@ -1094,18 +1176,18 @@ function previewImage(input) {
   }
 }
 
+// ─── ADMIN : AJOUTER CARTE ───────────────────────────────────────────────────
 async function addCard() {
   const name = document.getElementById('a-name').value.trim();
   if (!name) { showToast('Donne un nom !'); return; }
 
   const imgFile = document.getElementById('a-image').files[0];
-  const btn = document.querySelector('#page-admin .btn-primary');
-  btn.disabled = true;
+  const btn     = document.querySelector('#page-admin .btn-primary');
+  btn.disabled  = true;
   btn.textContent = 'Ajout en cours...';
 
   const finalize = async img => {
     const card = {
-      id: Date.now(),
       name,
       role:     document.getElementById('a-role').value.trim(),
       desc:     document.getElementById('a-desc').value.trim(),
@@ -1114,45 +1196,58 @@ async function addCard() {
       power:    document.getElementById('a-power').value.trim(),
       image:    img || null
     };
-    const cards = getCards();
-    cards.push(card);
-    saveCards(cards);
-    await saveDB(); // Sauvegarde immédiate pour que les potes voient la carte
 
+    // Insérer dans Supabase et récupérer l'id auto-généré
+    const saved = await persistCard(card);
+    if (saved) {
+      card.id = saved.id;
+    } else {
+      // Mode hors-ligne : id temporaire
+      card.id = Date.now();
+      showToast('⚠️ Hors-ligne — carte ajoutée localement');
+    }
+
+    DB.cards.push(card);
     renderAdminList();
     showToast('Carte "' + name + '" ajoutée et déployée ! ✅');
 
-    // Reset du formulaire
+    // Reset formulaire
     ['a-name', 'a-role', 'a-desc', 'a-power', 'a-initials'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('a-image').value = '';
     const prev = document.getElementById('img-preview');
-    const ex = prev.querySelector('img');
+    const ex   = prev.querySelector('img');
     if (ex) ex.remove();
     document.getElementById('img-preview-text').style.display = '';
 
-    btn.disabled = false;
+    btn.disabled    = false;
     btn.textContent = 'Ajouter la carte';
   };
 
   if (imgFile) {
-    const r = new FileReader();
-    r.onload = e => finalize(e.target.result);
-    r.onerror = () => { showToast('Erreur lecture image'); btn.disabled = false; btn.textContent = 'Ajouter la carte'; };
+    const r    = new FileReader();
+    r.onload   = e => finalize(e.target.result);
+    r.onerror  = () => {
+      showToast('Erreur lecture image');
+      btn.disabled    = false;
+      btn.textContent = 'Ajouter la carte';
+    };
     r.readAsDataURL(imgFile);
   } else {
     await finalize(null);
   }
 }
 
+// ─── ADMIN : SUPPRIMER CARTE ─────────────────────────────────────────────────
 async function deleteCard(id) {
-  saveCards(getCards().filter(c => c.id !== id));
-  await saveDB();
+  DB.cards = DB.cards.filter(c => c.id !== id);
   renderAdminList();
+  await deleteCardDB(id);
   showToast('Carte supprimée.');
 }
 
+// ─── ADMIN : LISTE ───────────────────────────────────────────────────────────
 function renderAdminList() {
   const cards = getCards();
   document.getElementById('card-count').textContent = cards.length;
@@ -1181,21 +1276,23 @@ function renderAdminList() {
         <div class="admin-card-name">${escapeHtml(c.name)}</div>
         <div class="admin-card-meta">${lbls[c.rarity] || lbls.rare}${c.role ? ' · ' + escapeHtml(c.role) : ''}</div>
       </div>
-      <button class="btn-icon" onclick="deleteCard(${c.id})" title="Supprimer">✕</button>
+      <button class="btn-icon" onclick="deleteCard(${JSON.stringify(c.id)})" title="Supprimer">✕</button>
     `;
     list.appendChild(div);
   });
 }
 
+// ─── ADMIN : MOT DE PASSE ────────────────────────────────────────────────────
 async function changeAdminPass() {
   const np = document.getElementById('new-admin-pass').value;
   if (!np) { showToast('Entre un mot de passe !'); return; }
   DB.adminPass = np;
-  await saveDB();
+  await persistAdminPass(np);
   document.getElementById('new-admin-pass').value = '';
   showToast('Mot de passe changé !');
 }
 
+// ─── TOAST ───────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1203,7 +1300,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// Raccourcis clavier
+// ─── RACCOURCIS CLAVIER ──────────────────────────────────────────────────────
 document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 </script>
