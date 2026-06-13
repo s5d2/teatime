@@ -296,45 +296,58 @@
 
   .reveal-section { display: none; margin-top: 2.5rem; }
   .reveal-section.visible { display: block; }
-  .reveal-label { font-size: 11px; color: var(--muted); margin-bottom: 16px; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
-  .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 2rem; }
+  .reveal-label { font-size: 11px; color: var(--muted); margin-bottom: 20px; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+  .cards-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-bottom: 2rem; }
 
   /* CARD */
   .card {
-    border-radius: 18px;
-    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.15);
     display: flex;
     flex-direction: column;
     position: relative;
     text-align: center;
     overflow: hidden;
-    width: 100%;
-    aspect-ratio: 3/4.2;
-    min-height: 210px;
+    width: 160px;
+    height: 224px;
+    flex-shrink: 0;
     transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
     cursor: pointer;
   }
-  .card:hover { transform: translateY(-6px) scale(1.02); }
+  .card:hover { transform: translateY(-8px) scale(1.03); }
 
-  .card.rare { background: linear-gradient(160deg, #0d2855 0%, #081a3d 55%, #040e24 100%); border-color: rgba(74,158,255,0.4); box-shadow: 0 4px 20px rgba(74,158,255,0.15); }
-  .card.rare:hover { box-shadow: 0 8px 40px rgba(74,158,255,0.3); }
-  .card.epique { background: linear-gradient(160deg, #200850 0%, #130330 55%, #0a0220 100%); border-color: rgba(176,107,255,0.45); box-shadow: 0 4px 20px rgba(176,107,255,0.18); }
-  .card.epique:hover { box-shadow: 0 8px 40px rgba(176,107,255,0.35); }
-  .card.legendaire { background: linear-gradient(160deg, #2a1500 0%, #1a0c00 55%, #0d0600 100%); border-color: rgba(255,184,48,0.5); box-shadow: 0 4px 20px rgba(255,184,48,0.2); }
-  .card.legendaire:hover { box-shadow: 0 8px 40px rgba(255,184,48,0.4); }
+  /* Fonds colorés chauds façon carte à collectionner */
+  .card.rare {
+    background: linear-gradient(170deg, #1a4fa0 0%, #0d2f6e 40%, #071a45 100%);
+    border-color: rgba(74,158,255,0.5);
+    box-shadow: 0 6px 24px rgba(74,158,255,0.2);
+  }
+  .card.rare:hover { box-shadow: 0 12px 48px rgba(74,158,255,0.4); }
+  .card.epique {
+    background: linear-gradient(170deg, #5a1fa0 0%, #36106e 40%, #1e0845 100%);
+    border-color: rgba(176,107,255,0.5);
+    box-shadow: 0 6px 24px rgba(176,107,255,0.2);
+  }
+  .card.epique:hover { box-shadow: 0 12px 48px rgba(176,107,255,0.45); }
+  .card.legendaire {
+    background: linear-gradient(170deg, #c97a00 0%, #8a5000 40%, #4a2a00 100%);
+    border-color: rgba(255,184,48,0.6);
+    box-shadow: 0 6px 24px rgba(255,184,48,0.25);
+  }
+  .card.legendaire:hover { box-shadow: 0 12px 48px rgba(255,184,48,0.5); }
 
   /* MYTHIQUE */
   .card.mythique {
-    background: linear-gradient(160deg, #2a0515 0%, #1a020c 55%, #0d0108 100%);
-    box-shadow: 0 4px 24px rgba(255,45,85,0.25);
+    background: linear-gradient(170deg, #8a0025 0%, #5a000f 40%, #2a0008 100%);
+    box-shadow: 0 6px 28px rgba(255,45,85,0.3);
     border-color: transparent;
     position: relative;
   }
   .mythique-border {
     position: absolute;
     inset: 0;
-    border-radius: 18px;
-    padding: 1.5px;
+    border-radius: 20px;
+    padding: 2px;
     background: linear-gradient(135deg, #ff2d55 0%, #ff6b35 25%, #ffb830 50%, #ff6b35 75%, #ff2d55 100%);
     background-size: 300% 300%;
     animation: mythBorderAnim 3s ease infinite;
@@ -345,34 +358,69 @@
     pointer-events: none;
   }
   @keyframes mythBorderAnim { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-  .card.mythique:hover { box-shadow: 0 12px 50px rgba(255,45,85,0.5); transform: translateY(-8px) scale(1.03); }
+  .card.mythique:hover { box-shadow: 0 14px 56px rgba(255,45,85,0.6); transform: translateY(-10px) scale(1.04); }
 
-  .card-shine { position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: 18px; }
-  .card.rare .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(120,200,255,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(74,158,255,0.1) 0%, transparent 50%); }
-  .card.epique .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(220,140,255,0.35) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(176,107,255,0.12) 0%, transparent 50%); }
-  .card.legendaire .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(255,240,120,0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(255,200,50,0.15) 0%, transparent 50%); }
-  .card.mythique .card-shine { background: radial-gradient(ellipse at 25% 15%, rgba(255,100,120,0.45) 0%, transparent 55%), radial-gradient(ellipse at 75% 85%, rgba(255,107,53,0.25) 0%, transparent 55%); animation: mythShine 4s ease-in-out infinite; }
+  /* Éclat lumineux sur la carte */
+  .card-shine { position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: 20px; }
+  .card.rare .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(160,210,255,0.35) 0%, transparent 55%); }
+  .card.epique .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(210,160,255,0.4) 0%, transparent 55%); }
+  .card.legendaire .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(255,230,100,0.45) 0%, transparent 55%); }
+  .card.mythique .card-shine { background: radial-gradient(ellipse at 30% 20%, rgba(255,120,140,0.5) 0%, transparent 55%); animation: mythShine 4s ease-in-out infinite; }
   @keyframes mythShine { 0%,100%{opacity:1} 50%{opacity:0.55} }
 
-  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: 18px; }
+  /* Rayons de soleil façon carte Pokémon */
+  .card-rays {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .card-rays::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg, rgba(255,255,255,0.06) 10deg, transparent 20deg,
+      transparent 30deg, rgba(255,255,255,0.04) 40deg, transparent 50deg,
+      transparent 60deg, rgba(255,255,255,0.06) 70deg, transparent 80deg,
+      transparent 90deg, rgba(255,255,255,0.04) 100deg, transparent 110deg,
+      transparent 120deg, rgba(255,255,255,0.06) 130deg, transparent 140deg,
+      transparent 150deg, rgba(255,255,255,0.04) 160deg, transparent 170deg,
+      transparent 180deg, rgba(255,255,255,0.06) 190deg, transparent 200deg,
+      transparent 210deg, rgba(255,255,255,0.04) 220deg, transparent 230deg,
+      transparent 240deg, rgba(255,255,255,0.06) 250deg, transparent 260deg,
+      transparent 270deg, rgba(255,255,255,0.04) 280deg, transparent 290deg,
+      transparent 300deg, rgba(255,255,255,0.06) 310deg, transparent 320deg,
+      transparent 330deg, rgba(255,255,255,0.04) 340deg, transparent 350deg, transparent 360deg
+    );
+  }
+
+  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: 20px; }
   .star-particle { position: absolute; border-radius: 50%; background: #fff; animation: starFloat var(--dur, 3s) ease-in-out infinite; animation-delay: var(--delay, 0s); opacity: 0; }
   @keyframes starFloat { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:1} 80%{opacity:0.8} 100%{transform:translateY(-55px) scale(1.5);opacity:0} }
 
-  .card-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 0; position: relative; z-index: 5; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 0; position: relative; z-index: 5; }
 
-  .rarity-badge { font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; }
-  .card.rare .rarity-badge { background: rgba(74,158,255,0.15); color: #7ec8ff; border-color: rgba(74,158,255,0.35); }
-  .card.epique .rarity-badge { background: rgba(176,107,255,0.15); color: #d4a0ff; border-color: rgba(176,107,255,0.4); }
-  .card.legendaire .rarity-badge { background: rgba(255,184,48,0.15); color: #ffd070; border-color: rgba(255,184,48,0.4); }
-  .card.mythique .rarity-badge { background: linear-gradient(135deg, rgba(255,45,85,0.2), rgba(255,107,53,0.2)); color: #ff8099; border-color: rgba(255,45,85,0.5); text-shadow: 0 0 8px rgba(255,45,85,0.5); }
+  .rarity-badge { font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; }
+  .card.rare .rarity-badge { background: rgba(74,158,255,0.2); color: #aadeff; border-color: rgba(74,158,255,0.5); }
+  .card.epique .rarity-badge { background: rgba(176,107,255,0.2); color: #e0b8ff; border-color: rgba(176,107,255,0.5); }
+  .card.legendaire .rarity-badge { background: rgba(255,184,48,0.2); color: #ffe090; border-color: rgba(255,184,48,0.6); }
+  .card.mythique .rarity-badge { background: linear-gradient(135deg, rgba(255,45,85,0.25), rgba(255,107,53,0.25)); color: #ffb0c0; border-color: rgba(255,45,85,0.6); text-shadow: 0 0 8px rgba(255,45,85,0.5); }
 
-  .card-star { font-size: 15px; opacity: 0.55; color: #fff; line-height: 1; position: relative; z-index: 5; }
-  .card.legendaire .card-star { color: #ffd070; opacity: 1; font-size: 17px; }
-  .card.mythique .card-star { color: #ff4466; opacity: 1; font-size: 17px; text-shadow: 0 0 10px rgba(255,45,85,0.8), 0 0 20px rgba(255,45,85,0.4); animation: starPulse 2s ease-in-out infinite; }
+  .card-star { font-size: 16px; opacity: 0.7; color: rgba(255,255,255,0.9); line-height: 1; position: relative; z-index: 5; }
+  .card.legendaire .card-star { color: #ffd070; opacity: 1; font-size: 18px; }
+  .card.mythique .card-star { color: #ff4466; opacity: 1; font-size: 18px; text-shadow: 0 0 10px rgba(255,45,85,0.8), 0 0 20px rgba(255,45,85,0.4); animation: starPulse 2s ease-in-out infinite; }
   @keyframes starPulse { 0%,100%{text-shadow:0 0 10px rgba(255,45,85,0.8),0 0 20px rgba(255,45,85,0.4)} 50%{text-shadow:0 0 18px rgba(255,45,85,1),0 0 36px rgba(255,45,85,0.7)} }
 
-  .card-avatar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; position: relative; z-index: 5; }
-  .card-avatar { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.35); color: #fff; transition: transform 0.2s; }
+  .card-avatar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 12px; position: relative; z-index: 5; }
+  .card-avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; overflow: hidden; flex-shrink: 0; border: 2.5px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: #fff; transition: transform 0.2s; }
   .card:hover .card-avatar { transform: scale(1.06); }
   .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .card.rare .card-avatar { border-color: rgba(74,158,255,0.6); box-shadow: 0 0 12px rgba(74,158,255,0.25); }
@@ -381,17 +429,11 @@
   .card.mythique .card-avatar { border-color: rgba(255,45,85,0.7); box-shadow: 0 0 16px rgba(255,45,85,0.4), 0 0 32px rgba(255,45,85,0.15); animation: avatarMythique 3s ease-in-out infinite; }
   @keyframes avatarMythique { 0%,100%{box-shadow:0 0 16px rgba(255,45,85,0.4),0 0 32px rgba(255,45,85,0.15)} 50%{box-shadow:0 0 24px rgba(255,45,85,0.65),0 0 48px rgba(255,45,85,0.25)} }
 
-  .card-body { padding: 0 10px 2px; position: relative; z-index: 5; }
-  .card-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 2px; }
-  .card.mythique .card-name { text-shadow: 0 0 12px rgba(255,45,85,0.4); }
-  .card-role { font-size: 10px; color: rgba(255,255,255,0.6); font-style: italic; margin-bottom: 2px; }
-  .card-desc { font-size: 9.5px; color: rgba(255,255,255,0.5); line-height: 1.4; }
-
-  .card-stats { display: flex; justify-content: space-around; padding: 7px 10px 10px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; z-index: 5; gap: 4px; }
-  .card-stat { display: flex; align-items: center; gap: 3px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.8); }
-  .card-stat .stat-icon { font-size: 12px; }
-  .card.legendaire .card-stat { color: #ffe99a; }
-  .card.mythique .card-stat { color: #ff9aaa; }
+  .card-body { padding: 0 10px 14px; position: relative; z-index: 5; }
+  .card-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 3px; }
+  .card.mythique .card-name { text-shadow: 0 0 12px rgba(255,45,85,0.5); }
+  .card-role { font-size: 10.5px; color: rgba(255,255,255,0.7); font-style: italic; margin-bottom: 3px; }
+  .card-desc { font-size: 10px; color: rgba(255,255,255,0.55); line-height: 1.4; }
 
   .card-count-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; padding: 1px 7px; z-index: 10; backdrop-filter: blur(4px); }
 
@@ -413,7 +455,7 @@
   .filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
   .filter-btn.active-mythique { background: rgba(255,45,85,0.12); color: var(--mythique); border-color: rgba(255,45,85,0.35); }
 
-  .coll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .coll-grid { display: flex; flex-wrap: wrap; gap: 16px; }
   .coll-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 4rem 0; grid-column: 1/-1; line-height: 2; }
 
   /* ADMIN */
@@ -493,7 +535,9 @@
     .pack-hero h2 { font-size: 22px; }
     nav { padding: 0 1rem; }
     .main { padding: 1.5rem 1rem; }
-    .cards-row, .coll-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .cards-row { gap: 12px; }
+    .card { width: 140px; height: 196px; }
+    .card-avatar { width: 72px; height: 72px; font-size: 24px; }
     .nav-username { display: none; }
   }
 </style>
@@ -567,8 +611,8 @@
         </div>
       </div>
       <div class="packs-info">
-        <div class="info-chip">🎴 Packs : <strong id="packs-left-display">5</strong></div>
-        <div class="info-chip" id="timer-chip" style="display:none">⏱ Recharge dans <strong id="timer-display">10:00</strong></div>
+        <div class="info-chip">🎴 Packs : <strong id="packs-left-display">2</strong></div>
+        <div class="info-chip" id="timer-chip" style="display:none">⏱ Recharge dans <strong id="timer-display">5:00</strong></div>
       </div>
       <div class="pack-wrap">
         <div class="pack-visual" id="pack-visual" onclick="openPack()">
@@ -719,7 +763,7 @@ async function loadDB() {
     (usersRes.data || []).forEach(r => {
       DB.users[r.username] = {
         collection: r.collection || [],
-        packsLeft:  typeof r.packs_left === 'number' ? r.packs_left : 5,
+        packsLeft:  typeof r.packs_left === 'number' ? r.packs_left : 2,
         timerEnd:   r.timer_end  || null
       };
     });
@@ -823,8 +867,8 @@ function getCards() { return DB.cards || []; }
 function getAdminPass() { return DB.adminPass || 'admin123'; }
 
 function getUserData(n) {
-  if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 5, timerEnd: null };
-  if (typeof DB.users[n].packsLeft !== 'number') DB.users[n].packsLeft = 5;
+  if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 2, timerEnd: null };
+  if (typeof DB.users[n].packsLeft !== 'number') DB.users[n].packsLeft = 2;
   if (!DB.users[n].collection) DB.users[n].collection = [];
   return DB.users[n];
 }
@@ -922,7 +966,7 @@ function initPackPage() {
 function checkTimer(ud) {
   if (!ud.timerEnd) return;
   if (Date.now() >= ud.timerEnd) {
-    ud.packsLeft = 5;
+    ud.packsLeft = 2;
     ud.timerEnd  = null;
     saveUserData(currentUser, ud);
   }
@@ -960,7 +1004,7 @@ function startTimerDisplay(endTime) {
       clearInterval(timerInterval);
       timerInterval = null;
       const ud    = getUserData(currentUser);
-      ud.packsLeft = 5;
+      ud.packsLeft = 2;
       ud.timerEnd  = null;
       saveUserData(currentUser, ud);
       updatePackDisplay(ud);
@@ -1005,7 +1049,7 @@ async function openPack() {
   if (ud.packsLeft <= 0)   { showToast('Plus de packs ! Attends la recharge.'); packOpening = false; return; }
 
   ud.packsLeft--;
-  if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 10 * 60 * 1000;
+  if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 5 * 60 * 1000;
 
   const drawn = [];
   for (let i = 0; i < 5; i++) {
@@ -1073,6 +1117,7 @@ function makeCardEl(c, count) {
   div.innerHTML = `
     ${count ? `<div class="card-count-badge">x${count}</div>` : ''}
     ${mythBorder}
+    <div class="card-rays"></div>
     <div class="card-shine"></div>
     ${starsHTML}
     <div class="card-top">
@@ -1086,10 +1131,6 @@ function makeCardEl(c, count) {
       <div class="card-name">${escapeHtml(c.name || '?')}</div>
       ${c.role ? `<div class="card-role">${escapeHtml(c.role)}</div>` : ''}
       ${c.desc ? `<div class="card-desc">${escapeHtml(c.desc)}</div>` : ''}
-    </div>
-    <div class="card-stats">
-      <div class="card-stat"><span class="stat-icon">💥</span>${pwr}</div>
-      <div class="card-stat"><span class="stat-icon">✨</span>${lck}</div>
     </div>
   `;
   return div;
