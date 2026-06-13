@@ -342,9 +342,6 @@
   @keyframes mythBorderAnim { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
   /* Particules mythique */
-  .card-stars { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; border-radius: 18px; }
-  .star-particle { position: absolute; border-radius: 50%; background: #fff; animation: starFloat var(--dur,3s) ease-in-out infinite; animation-delay: var(--delay,0s); opacity: 0; }
-  @keyframes starFloat { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:1} 80%{opacity:0.8} 100%{transform:translateY(-55px) scale(1.5);opacity:0} }
 
   /* ── Zone photo (haut de carte) ── */
   .card-photo {
@@ -1432,7 +1429,7 @@ function makeCardEl(c, count) {
   div.onclick = () => openCardModal(c);
 
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique' };
-  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '★★★' };
+  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '' };
   const badge  = labels[c.rarity] || 'Rare';
   const star   = stars[c.rarity]  || '☆';
 
@@ -1446,17 +1443,7 @@ function makeCardEl(c, count) {
   const lck = Math.floor(Math.random() * 9000 + 500);
 
   // Particules mythique
-  let starsHTML = '';
-  if (c.rarity === 'mythique') {
-    starsHTML = '<div class="card-stars">';
-    for (let i = 0; i < 12; i++) {
-      const x = (Math.random()*90+5).toFixed(1), y = (Math.random()*100).toFixed(1);
-      const dur = (2+Math.random()*2).toFixed(1), delay = (Math.random()*3).toFixed(1);
-      const sz = Math.random()>0.5?2:3;
-      starsHTML += `<div class="star-particle" style="left:${x}%;top:${y}%;width:${sz}px;height:${sz}px;--dur:${dur}s;--delay:${delay}s"></div>`;
-    }
-    starsHTML += '</div>';
-  }
+  const starsHTML = '';
 
   const mythBorder = c.rarity === 'mythique' ? '<div class="mythique-border"></div>' : '';
 
