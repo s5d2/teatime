@@ -1003,7 +1003,7 @@ async function loadDB(attempt = 1) {
     if (attempt > 1) document.getElementById('loading-text').textContent = 'Reconnexion... (tentative ' + attempt + ')';
 
     // On charge d'abord sans les images (très léger), puis les images en arrière-plan
-    const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,created_at').order('created_at', { ascending: true });
+    const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,image_url,created_at').order('created_at', { ascending: true });
     const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection');
     const settingsRes = await sb.from('settings').select('admin_pass').eq('id', 1).maybeSingle();
 
@@ -1027,12 +1027,12 @@ async function loadDB(attempt = 1) {
     DB.users = {};
     (usersRes.data || []).forEach(r => {
       // La collection stockée ne contient que des {id, obtainedAt}
-      // On reconstruit les objets carte complets depuis DB.cards
+      // On reconstruit les objets carte complets depuis DB.cards (avec image)
       const rawColl = r.collection || [];
       const fullColl = rawColl.map(entry => {
         const cardId = typeof entry === 'object' ? entry.id : entry;
         const obtainedAt = typeof entry === 'object' ? entry.obtainedAt : null;
-        const card = DB.cards.find(c => c.id === cardId);
+        const card = DB.cards.find(c => String(c.id) === String(cardId));
         return card ? { ...card, obtainedAt } : null;
       }).filter(Boolean);
       DB.users[r.username] = {
@@ -1048,9 +1048,6 @@ async function loadDB(attempt = 1) {
     setSyncState('ok');
     isOffline = false;
 
-    // Charger les images en arrière-plan sans bloquer
-    loadImagesAsync();
-
     return true;
   } catch(e) {
     console.error('loadDB error:', e.message);
@@ -1062,33 +1059,6 @@ async function loadDB(attempt = 1) {
     setSyncState('error');
     isOffline = true;
     return false;
-  }
-}
-
-// ─── CHARGEMENT IMAGES EN ARRIÈRE-PLAN ───────────────────────────────────────
-async function loadImagesAsync() {
-  try {
-    const res = await sb.from('cards').select('id,image_url');
-    if (res.error) return;
-    (res.data || []).forEach(row => {
-      const card = DB.cards.find(c => c.id === row.id);
-      if (card && row.image_url) {
-        card.image = row.image_url;
-        // Mettre à jour les cartes déjà affichées si besoin
-        document.querySelectorAll('[data-card-id="' + row.id + '"] .card-photo img, [data-card-id="' + row.id + '"] .card-photo-initials').forEach(el => {
-          const photo = el.closest('.card-photo');
-          if (photo && !photo.querySelector('img')) {
-            const img = document.createElement('img');
-            img.src = row.image_url;
-            photo.insertBefore(img, photo.firstChild);
-            const init = photo.querySelector('.card-photo-initials');
-            if (init) init.remove();
-          }
-        });
-      }
-    });
-  } catch(e) {
-    console.warn('loadImagesAsync error:', e.message);
   }
 }
 
@@ -1376,7 +1346,7 @@ async function openPack() {
   ud.packsLeft--;
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 5 * 60 * 1000;
 
-  const owned = new Set((ud.collection || []).map(c => c.name + '_' + c.rarity));
+  const owned = new Set((ud.collection || []).map(c => (c.name || '') + '_' + (c.rarity || '')));
   const unowned = cards.filter(c => !owned.has(c.name + '_' + c.rarity));
 
   // Si collection complète → message et on n'ouvre pas
