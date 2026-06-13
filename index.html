@@ -349,7 +349,7 @@
   /* ── Zone photo (haut de carte) ── */
   .card-photo {
     width: 100%;
-    height: 115px;
+    height: 140px;
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
@@ -408,8 +408,8 @@
   /* ── Zone bas : fond coloré avec nom + desc ── */
   .card-body {
     flex: 1;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 8px 10px 9px;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    padding: 10px 10px 9px;
     position: relative; z-index: 5;
   }
   .card.rare      .card-body { background: linear-gradient(170deg, #0d2855 0%, #071a45 100%); }
@@ -428,19 +428,19 @@
   .card.mythique  .card-body::before { background: linear-gradient(to bottom, rgba(255,45,85,0.22), transparent); }
 
   .card-name {
-    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800;
-    color: #fff; line-height: 1.2; margin-bottom: 3px; position: relative; z-index: 1;
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800;
+    color: #fff; line-height: 1.2; margin-bottom: 4px; position: relative; z-index: 1;
   }
   .card.mythique .card-name { text-shadow: 0 0 10px rgba(255,45,85,0.5); }
 
   .card-role {
-    font-size: 9.5px; color: rgba(255,255,255,0.6); font-style: italic;
-    margin-bottom: 3px; position: relative; z-index: 1;
+    font-size: 10.5px; color: rgba(255,255,255,0.6); font-style: italic;
+    margin-bottom: 5px; position: relative; z-index: 1;
   }
   .card-desc {
-    font-size: 9px; color: rgba(255,255,255,0.5); line-height: 1.4;
+    font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.45;
     position: relative; z-index: 1;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
 
   /* ── Stats en bas ── */
@@ -1237,24 +1237,30 @@ function weightedPick(cards, collection, drawnNames) {
   }
   if (!pool || !pool.length) return null;
 
-  // Exclure les doublons du tirage en cours (toujours) et de la collection (90% du temps)
   const alreadyDrawn = drawnNames || new Set();
   const owned = new Set((collection || []).map(c => c.name + '_' + c.rarity));
+
+  // Cartes pas encore tirées dans ce pack
   const notInDraw = pool.filter(c => !alreadyDrawn.has(c.name + '_' + c.rarity));
+  // Cartes pas encore dans la collection
   const fresh = notInDraw.filter(c => !owned.has(c.name + '_' + c.rarity));
 
-  // Priorité : pas dans le tirage ET pas possédé → pas dans le tirage → tout le pool
   const dupeChance = Math.random();
-  let finalPool;
-  if (notInDraw.length === 0) {
-    finalPool = pool; // plus le choix, on duplique
-  } else if (fresh.length > 0 && dupeChance > 0.10) {
-    finalPool = fresh;
-  } else {
-    finalPool = notInDraw;
+
+  // Si on peut donner du neuf (90% de chance) → on cherche dans toutes raretés si besoin
+  if (dupeChance > 0.10) {
+    if (fresh.length > 0) return fresh[Math.floor(Math.random() * fresh.length)];
+
+    // fresh vide pour cette rareté → chercher dans tout le catalogue
+    const allFresh = cards.filter(c =>
+      !alreadyDrawn.has(c.name + '_' + c.rarity) && !owned.has(c.name + '_' + c.rarity)
+    );
+    if (allFresh.length > 0) return allFresh[Math.floor(Math.random() * allFresh.length)];
   }
 
-  return finalPool[Math.floor(Math.random() * finalPool.length)];
+  // 10% doublon (ou plus de cartes neuves du tout) : carte pas dans ce tirage
+  const fallback = notInDraw.length > 0 ? notInDraw : pool;
+  return fallback[Math.floor(Math.random() * fallback.length)];
 }
 
 let packOpening = false;
