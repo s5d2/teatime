@@ -931,14 +931,15 @@ function setSyncState(state) {
 }
 
 // ─── LECTURE ─────────────────────────────────────────────────────────────────
-async function loadDB() {
+async function loadDB(attempt = 1) {
   try {
     setSyncState('syncing');
+    if (attempt > 1) document.getElementById('loading-text').textContent = 'Reconnexion... (tentative ' + attempt + ')';
 
-    // Séquentiel — évite DataCloneError (Headers non-clonables avec Promise.all)
-    const cardsRes    = await sb.from('cards').select('*').order('created_at', { ascending: true });
-    const usersRes    = await sb.from('users').select('*');
-    const settingsRes = await sb.from('settings').select('*').eq('id', 1).maybeSingle();
+    // On charge d'abord sans les images (très léger), puis les images en arrière-plan
+    const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,created_at').order('created_at', { ascending: true });
+    const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection');
+    const settingsRes = await sb.from('settings').select('admin_pass').eq('id', 1).maybeSingle();
 
     if (cardsRes.error)    throw cardsRes.error;
     if (usersRes.error)    throw usersRes.error;
@@ -971,12 +972,48 @@ async function loadDB() {
 
     setSyncState('ok');
     isOffline = false;
+
+    // Charger les images en arrière-plan sans bloquer
+    loadImagesAsync();
+
     return true;
   } catch(e) {
-    setSyncState('error');
     console.error('loadDB error:', e.message);
+    // Retry automatique jusqu'à 3 fois si timeout
+    if (attempt < 3 && (e.message?.includes('timeout') || e.message?.includes('canceling') || e.code === 'PGRST301')) {
+      await new Promise(r => setTimeout(r, 1500 * attempt));
+      return loadDB(attempt + 1);
+    }
+    setSyncState('error');
     isOffline = true;
     return false;
+  }
+}
+
+// ─── CHARGEMENT IMAGES EN ARRIÈRE-PLAN ───────────────────────────────────────
+async function loadImagesAsync() {
+  try {
+    const res = await sb.from('cards').select('id,image_url');
+    if (res.error) return;
+    (res.data || []).forEach(row => {
+      const card = DB.cards.find(c => c.id === row.id);
+      if (card && row.image_url) {
+        card.image = row.image_url;
+        // Mettre à jour les cartes déjà affichées si besoin
+        document.querySelectorAll('[data-card-id="' + row.id + '"] .card-photo img, [data-card-id="' + row.id + '"] .card-photo-initials').forEach(el => {
+          const photo = el.closest('.card-photo');
+          if (photo && !photo.querySelector('img')) {
+            const img = document.createElement('img');
+            img.src = row.image_url;
+            photo.insertBefore(img, photo.firstChild);
+            const init = photo.querySelector('.card-photo-initials');
+            if (init) init.remove();
+          }
+        });
+      }
+    });
+  } catch(e) {
+    console.warn('loadImagesAsync error:', e.message);
   }
 }
 
@@ -1322,6 +1359,7 @@ async function openPack() {
 function makeCardEl(c, count) {
   const div = document.createElement('div');
   div.className = 'card ' + (c.rarity || 'rare');
+  if (c.id) div.dataset.cardId = c.id;
   div.onclick = () => openCardModal(c);
 
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
