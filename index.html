@@ -687,6 +687,48 @@
     .card-modal .card-photo-initials { font-size: 42px; }
     .card-modal-name { font-size: 22px; }
   }
+  .card-modal-delete-zone { margin-top: 20px; }
+  .btn-delete-card {
+    background: rgba(255,45,85,0.08);
+    border: 1px solid rgba(255,45,85,0.25);
+    color: #ff6b85;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 16px;
+    width: 100%;
+    transition: all 0.15s;
+  }
+  .btn-delete-card:hover { background: rgba(255,45,85,0.16); border-color: rgba(255,45,85,0.5); }
+
+  .card-modal-confirm {
+    display: none;
+    background: rgba(255,45,85,0.06);
+    border: 1px solid rgba(255,45,85,0.2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .card-modal-confirm.visible { display: block; }
+  .card-modal-confirm p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .card-modal-confirm p strong { color: #fff; }
+  .confirm-btns { display: flex; gap: 8px; }
+  .btn-confirm-yes {
+    flex: 1; background: rgba(255,45,85,0.2); border: 1px solid rgba(255,45,85,0.5);
+    color: #ff6b85; border-radius: var(--radius-xs); font-size: 13px; font-weight: 600; padding: 9px;
+  }
+  .btn-confirm-yes:hover { background: rgba(255,45,85,0.35); }
+  .btn-confirm-no {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--muted); border-radius: var(--radius-xs); font-size: 13px; font-weight: 500; padding: 9px;
+  }
+  .btn-confirm-no:hover { background: var(--surface3); color: var(--text); }
 </style>
 </head>
 <body>
@@ -1301,17 +1343,17 @@ function makeCardEl(c, count) {
 }
 
 // ─── CARD MODAL ───────────────────────────────────────────────────────────────
-function openCardModal(c) {
+function openCardModal(c, fromCollection) {
   const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: '✦ Mythique' };
 
-  // Clone la carte visuelle en grand
+  // Carte visuelle en grand
   const cardEl = makeCardEl(c);
   cardEl.style.pointerEvents = 'none';
   const wrap = document.getElementById('modal-card-el');
   wrap.innerHTML = '';
   wrap.appendChild(cardEl);
 
-  // Infos
+  // Infos + bouton supprimer si depuis collection
   const info = document.getElementById('modal-card-info');
   info.innerHTML = `
     <div class="card-modal-rarity ${c.rarity || 'rare'}">${labels[c.rarity] || 'Rare'}</div>
@@ -1319,10 +1361,38 @@ function openCardModal(c) {
     ${c.role ? `<div class="card-modal-role">${escapeHtml(c.role)}</div>` : ''}
     <div class="card-modal-divider"></div>
     ${c.desc ? `<div class="card-modal-desc">${escapeHtml(c.desc)}</div>` : `<div class="card-modal-desc" style="color:var(--muted);font-style:italic">Aucune description.</div>`}
+    ${fromCollection ? `
+    <div class="card-modal-delete-zone">
+      <button class="btn-delete-card" onclick="showDeleteConfirm()">🗑 Supprimer de ma collection</button>
+      <div class="card-modal-confirm" id="modal-confirm">
+        <p>Tu es sûr de vouloir supprimer <strong>${escapeHtml(c.name || '?')}</strong> de ta collection ? Cette action est irréversible.</p>
+        <div class="confirm-btns">
+          <button class="btn-confirm-yes" onclick="confirmDeleteCard('${escapeHtml(c.name || '')}', '${c.rarity || 'rare'}')">Oui, supprimer</button>
+          <button class="btn-confirm-no" onclick="hideDeleteConfirm()">Annuler</button>
+        </div>
+      </div>
+    </div>` : ''}
   `;
 
   document.getElementById('card-modal-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+function showDeleteConfirm() {
+  document.getElementById('modal-confirm').classList.add('visible');
+}
+function hideDeleteConfirm() {
+  document.getElementById('modal-confirm').classList.remove('visible');
+}
+
+function confirmDeleteCard(name, rarity) {
+  const ud = getUserData(currentUser);
+  const idx = ud.collection.findIndex(c => c.name === name && c.rarity === rarity);
+  if (idx !== -1) ud.collection.splice(idx, 1);
+  saveUserData(currentUser, ud);
+  closeCardModal(null);
+  renderCollection();
+  showToast(`🗑 ${name} supprimée de ta collection.`);
 }
 
 function closeCardModal(e) {
@@ -1393,7 +1463,11 @@ function renderCollection() {
     grid.innerHTML = '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>';
     return;
   }
-  filtered.forEach(({ card, n }) => grid.appendChild(makeCardEl(card, n > 1 ? n : null)));
+  filtered.forEach(({ card, n }) => {
+    const el = makeCardEl(card, n > 1 ? n : null);
+    el.onclick = () => openCardModal(card, true);
+    grid.appendChild(el);
+  });
 }
 
 // ─── IMAGE PREVIEW ───────────────────────────────────────────────────────────
