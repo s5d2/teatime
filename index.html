@@ -729,6 +729,72 @@
     color: var(--muted); border-radius: var(--radius-xs); font-size: 13px; font-weight: 500; padding: 9px;
   }
   .btn-confirm-no:hover { background: var(--surface3); color: var(--text); }
+
+  /* ── Carte fantôme "déjà tout" ── */
+  .card-ghost {
+    border-radius: 18px;
+    border: 2px dashed rgba(255,255,255,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    width: 155px;
+    height: 230px;
+    flex-shrink: 0;
+    background: #0a0a12;
+    cursor: default;
+    gap: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .card-ghost-icon {
+    font-size: 40px;
+    opacity: 0.35;
+    line-height: 1;
+  }
+  .card-ghost-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Edit Modal ── */
+  .edit-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .edit-modal-overlay.open { opacity: 1; pointer-events: all; }
+  .edit-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    width: 100%; max-width: 440px;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .edit-modal-overlay.open .edit-modal { transform: translateY(0) scale(1); }
+  .edit-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .edit-modal-title {
+    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800;
+  }
 </style>
 </head>
 <body>
@@ -1310,25 +1376,19 @@ async function openPack() {
     return;
   }
 
-  // Tirage : d'abord les cartes non possédées, puis doublons pour compléter à 3
+  // Tirage strictement unique : seulement les cartes non possédées (max 3)
   const drawn = [];
   const drawnNames = new Set();
+  const slots = 3;
+  const realCount = Math.min(slots, unowned.length); // cartes réelles dispo
 
-  // Phase 1 : cartes non possédées (toujours en priorité)
-  for (let i = 0; i < Math.min(3, unowned.length); i++) {
+  for (let i = 0; i < realCount; i++) {
     const c = weightedPick(unowned, drawnNames);
     if (c) { drawn.push(c); drawnNames.add(c.name + '_' + c.rarity); }
   }
 
-  // Phase 2 : si moins de 3 cartes, compléter avec des doublons UNIQUES dans ce pack
-  if (drawn.length < 3) {
-    // drawnNames contient déjà les cartes tirées en phase 1
-    // weightedPick exclut automatiquement drawnNames, donc jamais deux fois la même
-    for (let i = drawn.length; i < 3; i++) {
-      const c = weightedPick(cards, drawnNames);
-      if (c) { drawn.push(c); drawnNames.add(c.name + '_' + c.rarity); }
-    }
-  }
+  // Compléter avec des cartes "fantômes" si moins de 3 cartes non possédées
+  const ghostCount = slots - drawn.length;
 
   drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
   saveUserData(currentUser, ud);
@@ -1336,6 +1396,8 @@ async function openPack() {
 
   const grid = document.getElementById('reveal-cards');
   grid.innerHTML = '';
+
+  // Afficher les vraies cartes
   drawn.forEach((c, i) => {
     const el = makeCardEl(c);
     el.style.opacity   = '0';
@@ -1347,12 +1409,38 @@ async function openPack() {
       el.style.transform  = '';
     }, 80 * i);
   });
+
+  // Afficher les cartes fantômes "Vous avez déjà toutes les cartes"
+  for (let g = 0; g < ghostCount; g++) {
+    const el = makeGhostCardEl();
+    el.style.opacity   = '0';
+    el.style.transform = 'translateY(20px) scale(0.95)';
+    grid.appendChild(el);
+    const idx = drawn.length + g;
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      el.style.opacity    = '1';
+      el.style.transform  = '';
+    }, 80 * idx);
+  }
+
   document.getElementById('reveal-section').classList.add('visible');
 
   const hasMythique = drawn.some(c => c.rarity === 'mythique');
-  showToast(hasMythique ? '✦ MYTHIQUE ! Incroyable !' : '🎴 Pack ouvert !');
+  showToast(hasMythique ? '\u2726 MYTHIQUE ! Incroyable !' : '\uD83C\uDCB4 Pack ouvert !');
 
   packOpening = false;
+}
+
+// ─── CARTE FANTÔME ───────────────────────────────────────────────────────────
+function makeGhostCardEl() {
+  const div = document.createElement('div');
+  div.className = 'card-ghost';
+  div.innerHTML = \`
+    <div class="card-ghost-icon">?</div>
+    <div class="card-ghost-text">Vous avez déjà toutes les cartes !</div>
+  \`;
+  return div;
 }
 
 // ─── CARTE HTML ──────────────────────────────────────────────────────────────
@@ -1657,6 +1745,7 @@ function renderAdminList() {
         <div class="admin-card-name">${escapeHtml(c.name)}</div>
         <div class="admin-card-meta">${lbls[c.rarity] || lbls.rare}${c.role ? ' · ' + escapeHtml(c.role) : ''}</div>
       </div>
+      <button class="btn-icon" onclick="openEditModal(${JSON.stringify(c.id)})" title="Modifier">✏️</button>
       <button class="btn-icon" onclick="deleteCard(${JSON.stringify(c.id)})" title="Supprimer">✕</button>
     `;
     list.appendChild(div);
@@ -1673,6 +1762,115 @@ async function changeAdminPass() {
   showToast('Mot de passe changé !');
 }
 
+
+// ─── ADMIN : MODIFIER CARTE ──────────────────────────────────────────────────
+let editingCardId = null;
+
+function openEditModal(id) {
+  const card = DB.cards.find(c => c.id === id);
+  if (!card) return;
+  editingCardId = id;
+
+  document.getElementById('e-name').value     = card.name     || '';
+  document.getElementById('e-role').value     = card.role     || '';
+  document.getElementById('e-desc').value     = card.desc     || '';
+  document.getElementById('e-rarity').value   = card.rarity   || 'rare';
+  document.getElementById('e-initials').value = card.initials || '';
+  document.getElementById('e-power').value    = card.power    || '';
+
+  // Prévisualiser l'image actuelle
+  const prev = document.getElementById('e-img-preview');
+  const text = document.getElementById('e-img-preview-text');
+  let img = prev.querySelector('img');
+  if (card.image) {
+    if (!img) { img = document.createElement('img'); prev.insertBefore(img, prev.querySelector('input')); }
+    img.src = card.image;
+    text.style.display = 'none';
+  } else {
+    if (img) img.remove();
+    text.style.display = '';
+    text.textContent = 'Clique pour choisir';
+  }
+  document.getElementById('e-image').value = '';
+
+  document.getElementById('edit-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal-overlay')) return;
+  document.getElementById('edit-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  editingCardId = null;
+}
+
+function previewEditImage(input) {
+  const preview = document.getElementById('e-img-preview');
+  const text    = document.getElementById('e-img-preview-text');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      text.style.display = 'none';
+      let img = preview.querySelector('img');
+      if (!img) { img = document.createElement('img'); preview.insertBefore(img, input); }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function saveEditCard() {
+  if (!editingCardId) return;
+  const card = DB.cards.find(c => c.id === editingCardId);
+  if (!card) return;
+
+  const btn = document.getElementById('e-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement...';
+
+  const finalize = async (newImage) => {
+    card.name     = document.getElementById('e-name').value.trim()     || card.name;
+    card.role     = document.getElementById('e-role').value.trim();
+    card.desc     = document.getElementById('e-desc').value.trim();
+    card.rarity   = document.getElementById('e-rarity').value;
+    card.initials = (document.getElementById('e-initials').value.trim() || card.name.slice(0,2)).toUpperCase();
+    card.power    = document.getElementById('e-power').value.trim();
+    if (newImage !== null) card.image = newImage;
+
+    // Sauvegarder dans Supabase
+    try {
+      const { error } = await sb.from('cards').update({
+        name:        card.name,
+        role:        card.role        || null,
+        description: card.desc        || null,
+        rarity:      card.rarity,
+        initials:    card.initials    || null,
+        power:       card.power       || null,
+        image_url:   card.image       || null
+      }).eq('id', editingCardId);
+      if (error) throw error;
+      showToast('✅ Carte "' + card.name + '" modifiée !');
+    } catch(e) {
+      showToast('❌ Erreur sauvegarde : ' + e.message);
+    }
+
+    renderAdminList();
+    closeEditModal(null);
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer les modifications';
+  };
+
+  const imgFile = document.getElementById('e-image').files[0];
+  if (imgFile) {
+    const r = new FileReader();
+    r.onload = e => finalize(e.target.result);
+    r.onerror = () => { showToast('Erreur lecture image'); btn.disabled = false; btn.textContent = 'Enregistrer les modifications'; };
+    r.readAsDataURL(imgFile);
+  } else {
+    await finalize(null); // null = garder l'image actuelle
+  }
+}
+
 // ─── TOAST ───────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1684,7 +1882,56 @@ function showToast(msg) {
 // ─── RACCOURCIS CLAVIER ──────────────────────────────────────────────────────
 document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCardModal(null); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCardModal(null); closeEditModal(null); } });
 </script>
+
+<!-- EDIT CARD MODAL -->
+<div class="edit-modal-overlay" id="edit-modal-overlay" onclick="closeEditModal(event)">
+  <div class="edit-modal" id="edit-modal">
+    <div class="edit-modal-header">
+      <div class="edit-modal-title">Modifier la carte</div>
+      <button class="card-modal-close" style="position:relative;top:auto;right:auto;" onclick="closeEditModal(null)">✕</button>
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label class="form-label">Nom</label>
+      <input type="text" id="e-name" placeholder="Ex : Kévin" />
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label class="form-label">Rôle / titre</label>
+      <input type="text" id="e-role" placeholder="Ex : Le rageux officiel" />
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label class="form-label">Description</label>
+      <textarea id="e-desc" placeholder="Inside joke..."></textarea>
+    </div>
+    <div class="form-row-2" style="margin-bottom:10px">
+      <div class="form-row">
+        <label class="form-label">Rareté</label>
+        <select id="e-rarity">
+          <option value="rare">Rare</option>
+          <option value="epique">Épique</option>
+          <option value="legendaire">Légendaire</option>
+          <option value="mythique">✦ Mythique</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Initiales</label>
+        <input type="text" id="e-initials" placeholder="Ex : KV" maxlength="3" />
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label class="form-label">Pouvoir spécial</label>
+      <input type="text" id="e-power" placeholder="Ex : +10 Rage..." />
+    </div>
+    <div class="form-row" style="margin-bottom:14px">
+      <label class="form-label">Photo (laisser vide pour garder l'actuelle)</label>
+      <div class="image-preview" id="e-img-preview">
+        <span id="e-img-preview-text">Clique pour choisir</span>
+        <input type="file" id="e-image" accept="image/*" onchange="previewEditImage(this)" />
+      </div>
+    </div>
+    <button class="btn-primary" id="e-save-btn" onclick="saveEditCard()">Enregistrer les modifications</button>
+  </div>
+</div>
 </body>
 </html>
