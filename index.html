@@ -1220,7 +1220,7 @@ function startTimerDisplay(endTime) {
   }, 1000);
 }
 
-function weightedPick(cards) {
+function weightedPick(cards, collection, drawnNames) {
   const by = {
     mythique:   cards.filter(c => c.rarity === 'mythique'),
     legendaire: cards.filter(c => c.rarity === 'legendaire'),
@@ -1236,7 +1236,25 @@ function weightedPick(cards) {
     }
   }
   if (!pool || !pool.length) return null;
-  return pool[Math.floor(Math.random() * pool.length)];
+
+  // Exclure les doublons du tirage en cours (toujours) et de la collection (90% du temps)
+  const alreadyDrawn = drawnNames || new Set();
+  const owned = new Set((collection || []).map(c => c.name + '_' + c.rarity));
+  const notInDraw = pool.filter(c => !alreadyDrawn.has(c.name + '_' + c.rarity));
+  const fresh = notInDraw.filter(c => !owned.has(c.name + '_' + c.rarity));
+
+  // Priorité : pas dans le tirage ET pas possédé → pas dans le tirage → tout le pool
+  const dupeChance = Math.random();
+  let finalPool;
+  if (notInDraw.length === 0) {
+    finalPool = pool; // plus le choix, on duplique
+  } else if (fresh.length > 0 && dupeChance > 0.10) {
+    finalPool = fresh;
+  } else {
+    finalPool = notInDraw;
+  }
+
+  return finalPool[Math.floor(Math.random() * finalPool.length)];
 }
 
 let packOpening = false;
@@ -1256,9 +1274,13 @@ async function openPack() {
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 5 * 60 * 1000;
 
   const drawn = [];
+  const drawnNames = new Set();
   for (let i = 0; i < 3; i++) {
-    const c = weightedPick(cards);
-    if (c) drawn.push(c);
+    const c = weightedPick(cards, ud.collection, drawnNames);
+    if (c) {
+      drawn.push(c);
+      drawnNames.add(c.name + '_' + c.rarity);
+    }
   }
 
   drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
