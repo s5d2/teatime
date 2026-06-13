@@ -1281,12 +1281,17 @@ async function openPack() {
 
   const drawn = [];
   const drawnNames = new Set();
-  for (let i = 0; i < 3; i++) {
+  // On ne peut jamais tirer plus de cartes uniques qu'il n'en existe
+  const maxDraw = Math.min(3, cards.length);
+  for (let i = 0; i < maxDraw; i++) {
     const c = weightedPick(cards, ud.collection, drawnNames);
     if (c) {
       drawn.push(c);
       drawnNames.add(c.name + '_' + c.rarity);
     }
+  }
+  if (cards.length < 3 && cards.length > 0) {
+    showToast('\u26a0\ufe0f Seulement ' + cards.length + ' carte(s) dans la base \u2014 ajoutes-en plus !');
   }
 
   drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
