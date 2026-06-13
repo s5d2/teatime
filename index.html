@@ -1026,8 +1026,17 @@ async function loadDB(attempt = 1) {
     // Utilisateurs
     DB.users = {};
     (usersRes.data || []).forEach(r => {
+      // La collection stockée ne contient que des {id, obtainedAt}
+      // On reconstruit les objets carte complets depuis DB.cards
+      const rawColl = r.collection || [];
+      const fullColl = rawColl.map(entry => {
+        const cardId = typeof entry === 'object' ? entry.id : entry;
+        const obtainedAt = typeof entry === 'object' ? entry.obtainedAt : null;
+        const card = DB.cards.find(c => c.id === cardId);
+        return card ? { ...card, obtainedAt } : null;
+      }).filter(Boolean);
       DB.users[r.username] = {
-        collection: r.collection || [],
+        collection: fullColl,
         packsLeft:  typeof r.packs_left === 'number' ? r.packs_left : 2,
         timerEnd:   r.timer_end  || null
       };
@@ -1090,9 +1099,14 @@ async function persistUser(username) {
   if (!ud) return;
   try {
     setSyncState('syncing');
+    // On ne stocke que les IDs pour éviter les base64 énormes
+    const lightCollection = (ud.collection || []).map(c => ({
+      id: c.id,
+      obtainedAt: c.obtainedAt || null
+    }));
     const { error } = await sb.from('users').upsert({
       username,
-      collection: ud.collection,
+      collection: lightCollection,
       packs_left: ud.packsLeft,
       timer_end:  ud.timerEnd
     }, { onConflict: 'username' });
