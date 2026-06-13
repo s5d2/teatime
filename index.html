@@ -811,11 +811,20 @@ function scheduleSaveUser(username) {
 }
 
 // ─── ÉCRITURE CARTES ─────────────────────────────────────────────────────────
+function generateId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 async function persistCard(card) {
   if (isOffline) return null;
   setSyncState('syncing');
   try {
+    const newId = generateId();
     const { data, error } = await sb.from('cards').insert({
+      id:       newId,
       name:     card.name,
       role:     card.role     || null,
       description: card.desc || null,
