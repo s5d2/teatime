@@ -1220,49 +1220,29 @@ function startTimerDisplay(endTime) {
   }, 1000);
 }
 
-function weightedPick(cards, collection, drawnNames) {
+function weightedPick(pool, drawnNames) {
+  // Filtre les cartes pas encore tirées dans ce pack
+  const available = pool.filter(c => !drawnNames.has(c.name + '_' + c.rarity));
+  if (!available.length) return null;
+
+  // Tirage pondéré par rareté parmi les disponibles
   const by = {
-    mythique:   cards.filter(c => c.rarity === 'mythique'),
-    legendaire: cards.filter(c => c.rarity === 'legendaire'),
-    epique:     cards.filter(c => c.rarity === 'epique'),
-    rare:       cards.filter(c => c.rarity === 'rare')
+    mythique:   available.filter(c => c.rarity === 'mythique'),
+    legendaire: available.filter(c => c.rarity === 'legendaire'),
+    epique:     available.filter(c => c.rarity === 'epique'),
+    rare:       available.filter(c => c.rarity === 'rare')
   };
   const roll = Math.random() * 100;
   let rarity = roll < 4 ? 'mythique' : roll < 16 ? 'legendaire' : roll < 38 ? 'epique' : 'rare';
-  let pool = by[rarity];
-  if (!pool || !pool.length) {
+  let bucket = by[rarity];
+  if (!bucket || !bucket.length) {
     for (const r of ['mythique', 'legendaire', 'epique', 'rare']) {
-      if (by[r] && by[r].length) { pool = by[r]; break; }
+      if (by[r] && by[r].length) { bucket = by[r]; break; }
     }
   }
-  if (!pool || !pool.length) return null;
-
-  const alreadyDrawn = drawnNames || new Set();
-  const owned = new Set((collection || []).map(c => c.name + '_' + c.rarity));
-
-  // Cartes pas encore tirées dans ce pack
-  const notInDraw = pool.filter(c => !alreadyDrawn.has(c.name + '_' + c.rarity));
-  // Cartes pas encore dans la collection
-  const fresh = notInDraw.filter(c => !owned.has(c.name + '_' + c.rarity));
-
-  const dupeChance = Math.random();
-
-  // Si on peut donner du neuf (90% de chance) → on cherche dans toutes raretés si besoin
-  if (dupeChance > 0.10) {
-    if (fresh.length > 0) return fresh[Math.floor(Math.random() * fresh.length)];
-
-    // fresh vide pour cette rareté → chercher dans tout le catalogue
-    const allFresh = cards.filter(c =>
-      !alreadyDrawn.has(c.name + '_' + c.rarity) && !owned.has(c.name + '_' + c.rarity)
-    );
-    if (allFresh.length > 0) return allFresh[Math.floor(Math.random() * allFresh.length)];
-  }
-
-  // 10% doublon (ou plus de cartes neuves du tout) : carte pas dans ce tirage
-  const fallback = notInDraw.length > 0 ? notInDraw : pool;
-  return fallback[Math.floor(Math.random() * fallback.length)];
+  if (!bucket || !bucket.length) return null;
+  return bucket[Math.floor(Math.random() * bucket.length)];
 }
-
 let packOpening = false;
 
 async function openPack() {
@@ -1279,19 +1259,38 @@ async function openPack() {
   ud.packsLeft--;
   if (ud.packsLeft === 0) ud.timerEnd = Date.now() + 5 * 60 * 1000;
 
+  const owned = new Set((ud.collection || []).map(c => c.name + '_' + c.rarity));
+  const unowned = cards.filter(c => !owned.has(c.name + '_' + c.rarity));
+
+  // Si collection complète → message et on n'ouvre pas
+  if (unowned.length === 0) {
+    ud.packsLeft++; // rembourser
+    if (ud.packsLeft === 1) ud.timerEnd = null;
+    saveUserData(currentUser, ud);
+    updatePackDisplay(ud);
+    showToast('🏆 Tu les as toutes ! Collection complète !');
+    packOpening = false;
+    return;
+  }
+
+  // Tirage : d'abord les cartes non possédées, puis doublons pour compléter à 3
   const drawn = [];
   const drawnNames = new Set();
-  // On ne peut jamais tirer plus de cartes uniques qu'il n'en existe
-  const maxDraw = Math.min(3, cards.length);
-  for (let i = 0; i < maxDraw; i++) {
-    const c = weightedPick(cards, ud.collection, drawnNames);
-    if (c) {
-      drawn.push(c);
-      drawnNames.add(c.name + '_' + c.rarity);
-    }
+
+  // Phase 1 : cartes non possédées (toujours en priorité)
+  for (let i = 0; i < Math.min(3, unowned.length); i++) {
+    const c = weightedPick(unowned, drawnNames);
+    if (c) { drawn.push(c); drawnNames.add(c.name + '_' + c.rarity); }
   }
-  if (cards.length < 3 && cards.length > 0) {
-    showToast('\u26a0\ufe0f Seulement ' + cards.length + ' carte(s) dans la base \u2014 ajoutes-en plus !');
+
+  // Phase 2 : si moins de 3 cartes, compléter avec des doublons (cartes déjà possédées)
+  if (drawn.length < 3) {
+    const dupePool = cards.filter(c => !drawnNames.has(c.name + '_' + c.rarity));
+    const dupeDrawn = new Set(drawnNames);
+    for (let i = drawn.length; i < 3; i++) {
+      const c = weightedPick(dupePool, dupeDrawn);
+      if (c) { drawn.push(c); dupeDrawn.add(c.name + '_' + c.rarity); }
+    }
   }
 
   drawn.forEach(c => ud.collection.push({ ...c, obtainedAt: Date.now() }));
