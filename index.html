@@ -752,20 +752,21 @@ function showScreen(name) {
 }
 
 async function init() {
-  document.getElementById('loading-text').textContent = 'Connexion au serveur...';
-  document.getElementById('loading-spinner').style.display = '';
-  document.getElementById('loading-retry').style.display = 'none';
-  showScreen('loading');
-
-  const ok = await loadDB();
-
-  // Dans tous les cas on passe au login — jamais de blocage
-  if (!ok) {
+  try {
+    showScreen('loading');
+    const ok = await loadDB();
+    if (!ok) {
+      document.getElementById('offline-banner').classList.add('visible');
+    } else {
+      document.getElementById('offline-banner').classList.remove('visible');
+    }
+  } catch(e) {
+    console.error('init error:', e);
     document.getElementById('offline-banner').classList.add('visible');
-  } else {
-    document.getElementById('offline-banner').classList.remove('visible');
+  } finally {
+    // Garanti de s'exécuter quoi qu'il arrive
+    showScreen('login');
   }
-  showScreen('login');
 }
 
 init();
