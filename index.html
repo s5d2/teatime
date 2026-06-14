@@ -940,6 +940,7 @@
     <div class="nav-tabs" id="nav-tabs">
       <button class="nav-tab active" onclick="showPage('packs', this)">Packs</button>
       <button class="nav-tab" onclick="showPage('collection', this)">Collection</button>
+      <button class="nav-tab" onclick="showPage('create', this)">Créer</button>
       <button class="nav-tab" id="admin-tab" style="display:none" onclick="showPage('admin', this)">
         Admin <span class="admin-badge">⚙</span>
       </button>
@@ -1001,6 +1002,61 @@
       </div>
       <div class="coll-grid" id="coll-grid"></div>
     </div>
+
+    <!-- CRÉER -->
+    <div class="page" id="page-create">
+      <div class="section-title">Créer une carte</div>
+      <div class="admin-grid" style="grid-template-columns: minmax(0,480px); justify-content: start;">
+        <div class="panel">
+          <div class="panel-title">Imagine la carte d'un pote (ou la tienne !)</div>
+          <div id="create-cooldown-msg" style="display:none; margin-bottom:14px; padding:10px 14px; border-radius:var(--radius-sm); background:rgba(255,184,48,0.1); border:1px solid rgba(255,184,48,0.3); color:#ffe090; font-size:13px;">
+            ⏱ Prochaine création possible dans <strong id="create-cooldown-timer">--:--:--</strong>
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Nom du pote</label>
+            <input type="text" id="c-name" placeholder="Ex : Kévin" />
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Rôle / titre</label>
+            <input type="text" id="c-role" placeholder="Ex : Le rageux officiel" />
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Inside joke / description</label>
+            <textarea id="c-desc" placeholder="Ex : Throw son clavier dès qu'il meurt..."></textarea>
+          </div>
+          <div class="form-row-2" style="margin-bottom:10px">
+            <div class="form-row">
+              <label class="form-label">Rareté</label>
+              <select id="c-rarity">
+                <option value="rare">Rare</option>
+                <option value="epique">Épique</option>
+                <option value="legendaire">Légendaire</option>
+                <option value="mythique">Mythique</option>
+                <option value="goat">GOAT</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Initiales (sans photo)</label>
+              <input type="text" id="c-initials" placeholder="Ex : KV" maxlength="3" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label class="form-label">Photo (optionnel)</label>
+            <div class="image-preview" id="c-img-preview">
+              <span id="c-img-preview-text">Clique pour choisir</span>
+              <input type="file" id="c-image" accept="image/*" onchange="previewImage(this, 'c-img-preview', 'c-img-preview-text')" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:14px">
+            <label class="form-label">Pouvoir spécial</label>
+            <input type="text" id="c-power" placeholder="Ex : +10 Rage, Clutch ultime..." />
+          </div>
+          <button class="btn-primary" id="create-card-btn" onclick="createCardByUser()">Créer la carte</button>
+          <p style="font-size:11px; color:var(--muted); margin-top:10px;">Une fois créée, ta carte rejoint le pool et peut sortir dans les packs de tout le monde (y compris les tiens). Tu peux en créer une nouvelle toutes les 24h.</p>
+        </div>
+      </div>
+    </div>
+
 
     <!-- ADMIN -->
     <div class="page" id="page-admin">
@@ -1098,7 +1154,7 @@ async function loadDB(attempt = 1) {
 
     // On charge d'abord sans les images (très léger), puis les images en arrière-plan
     const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,image_url,created_at').order('created_at', { ascending: true });
-    const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection');
+    const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection,last_card_creation');
     const settingsRes = await sb.from('settings').select('admin_pass').eq('id', 1).maybeSingle();
 
     if (cardsRes.error)    throw cardsRes.error;
@@ -1132,7 +1188,8 @@ async function loadDB(attempt = 1) {
       DB.users[r.username] = {
         collection: fullColl,
         packsLeft:  typeof r.packs_left === 'number' ? r.packs_left : 2,
-        timerEnd:   r.timer_end  || null
+        timerEnd:   r.timer_end  || null,
+        lastCardCreation: r.last_card_creation ? new Date(r.last_card_creation).getTime() : null
       };
     });
 
@@ -1172,7 +1229,8 @@ async function persistUser(username) {
       username,
       collection: lightCollection,
       packs_left: ud.packsLeft,
-      timer_end:  ud.timerEnd
+      timer_end:  ud.timerEnd,
+      last_card_creation: ud.lastCardCreation ? new Date(ud.lastCardCreation).toISOString() : null
     }, { onConflict: 'username' });
     if (error) throw error;
     setSyncState('ok');
@@ -1255,7 +1313,7 @@ function getCards() { return DB.cards || []; }
 function getAdminPass() { return DB.adminPass || 'admin123'; }
 
 function getUserData(n) {
-  if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 2, timerEnd: null };
+  if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 2, timerEnd: null, lastCardCreation: null };
   if (typeof DB.users[n].packsLeft !== 'number') DB.users[n].packsLeft = 2;
   if (!DB.users[n].collection) DB.users[n].collection = [];
   return DB.users[n];
@@ -1288,7 +1346,7 @@ async function init() {
 init();
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-let currentUser = null, isAdmin = false, timerInterval = null;
+let currentUser = null, isAdmin = false, timerInterval = null, createCooldownInterval = null;
 
 function toggleAdminPass() {
   const r = document.getElementById('admin-pass-row');
@@ -1342,6 +1400,7 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   if (id === 'collection') renderCollection();
   if (id === 'admin')      renderAdminList();
+  if (id === 'create')     initCreatePage();
 }
 
 // ─── PACKS ───────────────────────────────────────────────────────────────────
@@ -1700,9 +1759,9 @@ function renderCollection() {
 }
 
 // ─── IMAGE PREVIEW ───────────────────────────────────────────────────────────
-function previewImage(input) {
-  const preview = document.getElementById('img-preview');
-  const text    = document.getElementById('img-preview-text');
+function previewImage(input, previewId = 'img-preview', textId = 'img-preview-text') {
+  const preview = document.getElementById(previewId);
+  const text    = document.getElementById(textId);
   if (input.files && input.files[0]) {
     const reader  = new FileReader();
     reader.onload = e => {
@@ -1772,6 +1831,127 @@ async function addCard() {
       showToast('Erreur lecture image');
       btn.disabled    = false;
       btn.textContent = 'Ajouter la carte';
+    };
+    r.readAsDataURL(imgFile);
+  } else {
+    await finalize(null);
+  }
+}
+
+// ─── CRÉER : COOLDOWN 24H PAR UTILISATEUR (stocké côté serveur) ─────────────
+const CREATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+function getCreateCooldownEnd() {
+  const ud = getUserData(currentUser);
+  return ud.lastCardCreation ? ud.lastCardCreation + CREATE_COOLDOWN_MS : null;
+}
+
+function setCreateCooldownNow() {
+  const ud = getUserData(currentUser);
+  ud.lastCardCreation = Date.now();
+  saveUserData(currentUser, ud);
+}
+
+function initCreatePage() {
+  updateCreateCooldownUI();
+}
+
+function updateCreateCooldownUI() {
+  const end  = getCreateCooldownEnd();
+  const msg  = document.getElementById('create-cooldown-msg');
+  const btn  = document.getElementById('create-card-btn');
+  if (createCooldownInterval) { clearInterval(createCooldownInterval); createCooldownInterval = null; }
+
+  if (end && Date.now() < end) {
+    msg.style.display = '';
+    btn.disabled = true;
+    btn.textContent = 'En cooldown...';
+    const tick = () => {
+      const left = Math.max(0, end - Date.now());
+      if (left <= 0) {
+        clearInterval(createCooldownInterval);
+        createCooldownInterval = null;
+        updateCreateCooldownUI();
+        return;
+      }
+      const h = Math.floor(left / 3600000);
+      const m = Math.floor((left % 3600000) / 60000);
+      const s = Math.floor((left % 60000) / 1000);
+      document.getElementById('create-cooldown-timer').textContent =
+        String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    };
+    tick();
+    createCooldownInterval = setInterval(tick, 1000);
+  } else {
+    msg.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'Créer la carte';
+  }
+}
+
+// ─── CRÉER : AJOUT PAR UN UTILISATEUR ───────────────────────────────────────
+async function createCardByUser() {
+  const end = getCreateCooldownEnd();
+  if (end && Date.now() < end) {
+    showToast('⏱ Tu as déjà créé une carte récemment, reviens plus tard !');
+    return;
+  }
+
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { showToast('Donne un nom !'); return; }
+
+  const imgFile = document.getElementById('c-image').files[0];
+  const btn     = document.getElementById('create-card-btn');
+  btn.disabled  = true;
+  btn.textContent = 'Création en cours...';
+
+  const finalize = async img => {
+    const card = {
+      name,
+      role:     document.getElementById('c-role').value.trim(),
+      desc:     document.getElementById('c-desc').value.trim(),
+      rarity:   document.getElementById('c-rarity').value,
+      initials: (document.getElementById('c-initials').value.trim() || name.slice(0, 2)).toUpperCase(),
+      power:    document.getElementById('c-power').value.trim(),
+      image:    img || null
+    };
+
+    const saved = await persistCard(card);
+    if (saved) {
+      card.id = saved.id;
+    } else {
+      btn.disabled    = false;
+      btn.textContent = 'Créer la carte';
+      showToast('❌ Erreur Supabase — carte non sauvegardée. Vérifie la connexion.');
+      return;
+    }
+
+    DB.cards.push(card);
+    showToast('✨ Carte "' + name + '" créée et ajoutée au pool !');
+
+    // Reset formulaire
+    ['c-name', 'c-role', 'c-desc', 'c-power', 'c-initials'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('c-image').value = '';
+    const prev = document.getElementById('c-img-preview');
+    const ex   = prev.querySelector('img');
+    if (ex) ex.remove();
+    document.getElementById('c-img-preview-text').style.display = '';
+    document.getElementById('c-rarity').value = 'rare';
+
+    // Active le cooldown 24h
+    setCreateCooldownNow();
+    updateCreateCooldownUI();
+  };
+
+  if (imgFile) {
+    const r    = new FileReader();
+    r.onload   = e => finalize(e.target.result);
+    r.onerror  = () => {
+      showToast('Erreur lecture image');
+      btn.disabled    = false;
+      btn.textContent = 'Créer la carte';
     };
     r.readAsDataURL(imgFile);
   } else {
