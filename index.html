@@ -364,6 +364,51 @@
     50%      { box-shadow: 0 0 38px rgba(57,255,106,0.95), 0 6px 40px rgba(57,255,106,0.6); }
   }
 
+  /* ── Effet holographique (style carte Pokémon) au survol ── */
+  .card.mythique::after,
+  .card.goat::after {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: 6; pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(255,255,255,0.05) 36%,
+      rgba(255,255,255,0.35) 45%,
+      rgba(255,255,255,0.05) 54%,
+      transparent 70%
+    );
+    background-size: 250% 250%;
+    background-position: 0% 0%;
+    mix-blend-mode: overlay;
+    transition: opacity 0.35s ease;
+  }
+  .card.mythique::after {
+    background-image:
+      linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.05) 36%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.05) 54%, transparent 70%),
+      linear-gradient(125deg, #ff2d55 0%, #ffb830 20%, #b06bff 40%, #4a9eff 60%, #ffb830 80%, #ff2d55 100%);
+    background-blend-mode: overlay, normal;
+    mix-blend-mode: color-dodge;
+  }
+  .card.goat::after {
+    background-image:
+      linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.05) 36%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.05) 54%, transparent 70%),
+      linear-gradient(125deg, #39ff6a 0%, #b6ffce 20%, #00ff88 40%, #ffffff 50%, #00ff88 60%, #b6ffce 80%, #39ff6a 100%);
+    background-blend-mode: overlay, normal;
+    mix-blend-mode: color-dodge;
+  }
+  .card.mythique:hover::after,
+  .card.goat:hover::after {
+    opacity: 0.65;
+    animation: holoSweep 1.4s ease-in-out infinite;
+  }
+  @keyframes holoSweep {
+    0%   { background-position: 0% 0%, 0% 0%; }
+    100% { background-position: 100% 100%, 100% 100%; }
+  }
+
   /* Particules mythique */
 
   /* ── Zone photo (haut de carte) ── */
@@ -632,7 +677,7 @@
     display: flex;
     gap: 2rem;
     align-items: center;
-    max-width: 700px;
+    max-width: 780px;
     width: 100%;
     transform: translateY(24px) scale(0.96);
     transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
@@ -641,14 +686,24 @@
     transform: translateY(0) scale(1);
   }
   .card-modal .card {
-    width: 280px;
-    height: 415px;
+    width: 320px;
+    height: 475px;
     flex-shrink: 0;
     cursor: default;
   }
   .card-modal .card:hover { transform: none; }
-  .card-modal .card-photo { height: 205px; }
-  .card-modal .card-photo-initials { font-size: 66px; }
+  .card-modal .card-photo { height: 235px; }
+  .card-modal .card-photo-initials { font-size: 76px; }
+  .card-modal .card .card-name { font-size: 18px; }
+  .card-modal .card .card-role { font-size: 13px; margin-bottom: 8px; }
+  .card-modal .card .card-desc {
+    font-size: 13px; line-height: 1.55;
+    -webkit-line-clamp: 4;
+  }
+  .card-modal .card .rarity-badge { font-size: 11px; padding: 4px 11px; }
+  .card-modal .card .card-star { font-size: 22px; }
+  .card-modal .card .card-stat { font-size: 13px; }
+  .card-modal .card .card-body { padding: 14px 14px 12px; }
   .card-modal-info {
     flex: 1;
     min-width: 0;
@@ -718,9 +773,9 @@
   .card-modal-close:hover { background: var(--surface3); color: var(--text); border-color: rgba(255,255,255,0.25); }
   @media (max-width: 600px) {
     .card-modal { flex-direction: column; align-items: center; gap: 1.5rem; overflow-y: auto; max-height: 90vh; }
-    .card-modal .card { width: 230px; height: 341px; }
-    .card-modal .card-photo { height: 168px; }
-    .card-modal .card-photo-initials { font-size: 52px; }
+    .card-modal .card { width: 265px; height: 393px; }
+    .card-modal .card-photo { height: 194px; }
+    .card-modal .card-photo-initials { font-size: 60px; }
     .card-modal-name { font-size: 22px; }
   }
   .card-modal-delete-zone { margin-top: 20px; }
