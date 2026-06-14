@@ -21,6 +21,7 @@
     --epique: #b06bff;
     --legendaire: #ffb830;
     --mythique: #ff2d55;
+    --goat: #39ff6a;
     --radius: 16px;
     --radius-sm: 10px;
     --radius-xs: 6px;
@@ -246,6 +247,7 @@
   .odds-chip.epique { background: rgba(176,107,255,0.1); color: #d4a0ff; border-color: rgba(176,107,255,0.25); }
   .odds-chip.legendaire { background: rgba(255,184,48,0.1); color: #ffd070; border-color: rgba(255,184,48,0.25); }
   .odds-chip.mythique { background: rgba(255,45,85,0.1); color: #ff8099; border-color: rgba(255,45,85,0.3); }
+  .odds-chip.goat { background: rgba(57,255,106,0.1); color: #7dffa0; border-color: rgba(57,255,106,0.35); }
 
   .packs-info { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 1.5rem 0; flex-wrap: wrap; }
   .info-chip { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 7px 16px; font-size: 13px; color: var(--muted); }
@@ -323,11 +325,13 @@
   .card.epique  { border-color: rgba(176,107,255,0.55); box-shadow: 0 6px 24px rgba(176,107,255,0.2); }
   .card.legendaire { border-color: rgba(255,184,48,0.65); box-shadow: 0 6px 28px rgba(255,184,48,0.25); }
   .card.mythique   { border-color: transparent; box-shadow: 0 6px 28px rgba(255,45,85,0.3); }
+  .card.goat       { border-color: transparent; box-shadow: 0 6px 32px rgba(57,255,106,0.4); }
 
   .card.rare:hover    { box-shadow: 0 14px 48px rgba(74,158,255,0.4); }
   .card.epique:hover  { box-shadow: 0 14px 48px rgba(176,107,255,0.45); }
   .card.legendaire:hover { box-shadow: 0 14px 52px rgba(255,184,48,0.5); }
   .card.mythique:hover   { box-shadow: 0 14px 56px rgba(255,45,85,0.6); transform: translateY(-10px) scale(1.04); }
+  .card.goat:hover       { box-shadow: 0 0 40px rgba(57,255,106,0.85), 0 14px 60px rgba(57,255,106,0.5); transform: translateY(-10px) scale(1.04); }
 
   /* Bordure animée mythique */
   .mythique-border {
@@ -340,6 +344,25 @@
     z-index: 1; pointer-events: none;
   }
   @keyframes mythBorderAnim { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+  /* Bordure animée GOAT — vert qui brille de fou */
+  .goat-border {
+    position: absolute; inset: 0; border-radius: 18px; padding: 2.5px;
+    background: linear-gradient(135deg, #39ff6a 0%, #b6ffce 25%, #00ff88 50%, #b6ffce 75%, #39ff6a 100%);
+    background-size: 300% 300%;
+    animation: mythBorderAnim 2.2s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out; mask-composite: exclude;
+    z-index: 1; pointer-events: none;
+    filter: drop-shadow(0 0 6px rgba(57,255,106,0.9)) drop-shadow(0 0 14px rgba(57,255,106,0.6));
+  }
+  .card.goat {
+    animation: goatGlow 1.6s ease-in-out infinite;
+  }
+  @keyframes goatGlow {
+    0%, 100% { box-shadow: 0 0 18px rgba(57,255,106,0.55), 0 6px 28px rgba(57,255,106,0.3); }
+    50%      { box-shadow: 0 0 38px rgba(57,255,106,0.95), 0 6px 40px rgba(57,255,106,0.6); }
+  }
 
   /* Particules mythique */
 
@@ -370,12 +393,14 @@
   .card.epique    .card-photo-fade { background: linear-gradient(to bottom, transparent, #1a0845); }
   .card.legendaire .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a1500); }
   .card.mythique  .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a0515); }
+  .card.goat      .card-photo-fade { background: linear-gradient(to bottom, transparent, #04230f); }
 
   /* fond coloré de la zone photo selon rareté */
   .card.rare      .card-photo { background: linear-gradient(160deg, #0d2855, #071a45); }
   .card.epique    .card-photo { background: linear-gradient(160deg, #200850, #0a0220); }
   .card.legendaire .card-photo { background: linear-gradient(160deg, #3a1e00, #1a0c00); }
   .card.mythique  .card-photo { background: linear-gradient(160deg, #2a0515, #0d0108); }
+  .card.goat      .card-photo { background: linear-gradient(160deg, #08431f, #021a0c); }
 
   /* ── Badge rareté + étoile en overlay sur la photo ── */
   .card-top {
@@ -393,6 +418,7 @@
   .card.epique    .rarity-badge { background: rgba(20,5,50,0.75);   color: #e0b8ff; border-color: rgba(176,107,255,0.5); }
   .card.legendaire .rarity-badge { background: rgba(40,20,0,0.75); color: #ffe090; border-color: rgba(255,184,48,0.6); }
   .card.mythique  .rarity-badge { background: rgba(40,0,15,0.75);  color: #ffb0c0; border-color: rgba(255,45,85,0.6); }
+  .card.goat      .rarity-badge { background: rgba(2,30,15,0.75); color: #9bffba; border-color: rgba(57,255,106,0.7); box-shadow: 0 0 10px rgba(57,255,106,0.6); }
 
   .card-star {
     font-size: 16px; line-height: 1; color: rgba(255,255,255,0.8);
@@ -401,6 +427,8 @@
   .card.legendaire .card-star { color: #ffd070; font-size: 18px; }
   .card.mythique   .card-star { color: #ff4466; font-size: 18px; text-shadow: 0 0 10px rgba(255,45,85,0.9); animation: starPulse 2s ease-in-out infinite; }
   @keyframes starPulse { 0%,100%{text-shadow:0 0 10px rgba(255,45,85,0.8),0 0 20px rgba(255,45,85,0.4)} 50%{text-shadow:0 0 18px rgba(255,45,85,1),0 0 36px rgba(255,45,85,0.7)} }
+  .card.goat       .card-star { color: #39ff6a; font-size: 19px; text-shadow: 0 0 10px rgba(57,255,106,0.9); animation: starPulseGoat 1.4s ease-in-out infinite; }
+  @keyframes starPulseGoat { 0%,100%{text-shadow:0 0 10px rgba(57,255,106,0.8),0 0 20px rgba(57,255,106,0.5)} 50%{text-shadow:0 0 20px rgba(57,255,106,1),0 0 40px rgba(57,255,106,0.8)} }
 
   /* ── Zone bas : fond coloré avec nom + desc ── */
   .card-body {
@@ -413,6 +441,7 @@
   .card.epique    .card-body { background: linear-gradient(170deg, #200850 0%, #0a0220 100%); }
   .card.legendaire .card-body { background: linear-gradient(170deg, #2a1500 0%, #110800 100%); }
   .card.mythique  .card-body { background: linear-gradient(170deg, #2a0515 0%, #0d0108 100%); }
+  .card.goat      .card-body { background: linear-gradient(170deg, #08431f 0%, #021a0c 100%); }
 
   /* reflet lumineux en haut du body */
   .card-body::before {
@@ -423,12 +452,14 @@
   .card.epique    .card-body::before { background: linear-gradient(to bottom, rgba(176,107,255,0.2), transparent); }
   .card.legendaire .card-body::before { background: linear-gradient(to bottom, rgba(255,184,48,0.25), transparent); }
   .card.mythique  .card-body::before { background: linear-gradient(to bottom, rgba(255,45,85,0.22), transparent); }
+  .card.goat      .card-body::before { background: linear-gradient(to bottom, rgba(57,255,106,0.3), transparent); }
 
   .card-name {
     font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800;
     color: #fff; line-height: 1.2; margin-bottom: 4px; position: relative; z-index: 1;
   }
   .card.mythique .card-name { text-shadow: 0 0 10px rgba(255,45,85,0.5); }
+  .card.goat .card-name { text-shadow: 0 0 12px rgba(57,255,106,0.8); }
 
   .card-role {
     font-size: 10.5px; color: rgba(255,255,255,0.6); font-style: italic;
@@ -450,6 +481,7 @@
   .card.epique    .card-stats { background: rgba(10,2,32,0.9); }
   .card.legendaire .card-stats { background: rgba(17,8,0,0.9); }
   .card.mythique  .card-stats { background: rgba(13,1,8,0.9); }
+  .card.goat      .card-stats { background: rgba(2,26,12,0.9); }
 
   .card-stat {
     display: flex; align-items: center; gap: 4px;
@@ -459,6 +491,7 @@
   .card-stat .stat-icon { font-size: 11px; }
   .card.legendaire .card-stat { color: #ffe99a; }
   .card.mythique   .card-stat { color: #ff9aaa; }
+  .card.goat       .card-stat { color: #9bffba; }
 
   .card-count-badge {
     position: absolute; top: 36px; left: 8px;
@@ -477,6 +510,7 @@
   .stat-chip .n.badge-epique { color: var(--epique); }
   .stat-chip .n.badge-legendaire { color: var(--legendaire); }
   .stat-chip .n.badge-mythique { color: var(--mythique); }
+  .stat-chip .n.badge-goat { color: var(--goat); text-shadow: 0 0 8px rgba(57,255,106,0.6); }
 
   .coll-filter-wrap { margin-bottom: 1.25rem; }
   .coll-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px; display: inline-flex; gap: 4px; flex-wrap: wrap; }
@@ -484,6 +518,7 @@
   .filter-btn:hover { background: var(--surface2); color: var(--text); }
   .filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
   .filter-btn.active-mythique { background: rgba(255,45,85,0.12); color: var(--mythique); border-color: rgba(255,45,85,0.35); }
+  .filter-btn.active-goat { background: rgba(57,255,106,0.14); color: var(--goat); border-color: rgba(57,255,106,0.5); box-shadow: 0 0 10px rgba(57,255,106,0.35); }
 
   .coll-grid { display: flex; flex-wrap: wrap; gap: 16px; }
   .coll-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 4rem 0; grid-column: 1/-1; line-height: 2; }
@@ -509,6 +544,7 @@
   .admin-avatar.epique { background: rgba(176,107,255,0.12); color: #d4a0ff; border-color: rgba(176,107,255,0.3); }
   .admin-avatar.legendaire { background: rgba(255,184,48,0.12); color: #ffd070; border-color: rgba(255,184,48,0.3); }
   .admin-avatar.mythique { background: rgba(255,45,85,0.12); color: #ff8099; border-color: rgba(255,45,85,0.35); }
+  .admin-avatar.goat { background: rgba(57,255,106,0.14); color: #9bffba; border-color: rgba(57,255,106,0.5); box-shadow: 0 0 8px rgba(57,255,106,0.4); }
 
   .admin-card-info { flex: 1; min-width: 0; }
   .admin-card-name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -519,6 +555,7 @@
   .rarity-dot.epique { background: var(--epique); box-shadow: 0 0 4px var(--epique); }
   .rarity-dot.legendaire { background: var(--legendaire); box-shadow: 0 0 4px var(--legendaire); }
   .rarity-dot.mythique { background: var(--mythique); box-shadow: 0 0 6px var(--mythique); animation: dotPulse 2s ease-in-out infinite; }
+  .rarity-dot.goat { background: var(--goat); box-shadow: 0 0 8px var(--goat); animation: dotPulse 1.2s ease-in-out infinite; }
   @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
   .btn-icon { background: transparent; border: none; color: var(--muted); padding: 4px 6px; font-size: 14px; line-height: 1; border-radius: 4px; }
@@ -533,6 +570,7 @@
   .badge-epique { color: var(--epique); }
   .badge-legendaire { color: var(--legendaire); }
   .badge-mythique { color: var(--mythique); font-weight: 600; }
+  .badge-goat { color: var(--goat); font-weight: 700; text-shadow: 0 0 6px rgba(57,255,106,0.6); }
 
   .section-sep { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
   .no-cards-msg { font-size: 13px; color: var(--muted); text-align: center; padding: 1.5rem 0; }
@@ -603,14 +641,14 @@
     transform: translateY(0) scale(1);
   }
   .card-modal .card {
-    width: 240px;
-    height: 356px;
+    width: 280px;
+    height: 415px;
     flex-shrink: 0;
     cursor: default;
   }
   .card-modal .card:hover { transform: none; }
-  .card-modal .card-photo { height: 175px; }
-  .card-modal .card-photo-initials { font-size: 56px; }
+  .card-modal .card-photo { height: 205px; }
+  .card-modal .card-photo-initials { font-size: 66px; }
   .card-modal-info {
     flex: 1;
     min-width: 0;
@@ -631,6 +669,7 @@
   .card-modal-rarity.epique { background: rgba(176,107,255,0.15); color: #e0b8ff; border-color: rgba(176,107,255,0.4); }
   .card-modal-rarity.legendaire { background: rgba(255,184,48,0.15); color: #ffe090; border-color: rgba(255,184,48,0.5); }
   .card-modal-rarity.mythique { background: linear-gradient(135deg, rgba(255,45,85,0.2), rgba(255,107,53,0.2)); color: #ffb0c0; border-color: rgba(255,45,85,0.5); }
+  .card-modal-rarity.goat { background: linear-gradient(135deg, rgba(57,255,106,0.25), rgba(0,255,150,0.18)); color: #b6ffce; border-color: rgba(57,255,106,0.6); box-shadow: 0 0 12px rgba(57,255,106,0.4); }
   .card-modal-name {
     font-family: 'Syne', sans-serif;
     font-size: 28px;
@@ -679,9 +718,9 @@
   .card-modal-close:hover { background: var(--surface3); color: var(--text); border-color: rgba(255,255,255,0.25); }
   @media (max-width: 600px) {
     .card-modal { flex-direction: column; align-items: center; gap: 1.5rem; overflow-y: auto; max-height: 90vh; }
-    .card-modal .card { width: 190px; height: 282px; }
-    .card-modal .card-photo { height: 138px; }
-    .card-modal .card-photo-initials { font-size: 42px; }
+    .card-modal .card { width: 230px; height: 341px; }
+    .card-modal .card-photo { height: 168px; }
+    .card-modal .card-photo-initials { font-size: 52px; }
     .card-modal-name { font-size: 22px; }
   }
   .card-modal-delete-zone { margin-top: 20px; }
@@ -869,6 +908,7 @@
           <span class="odds-chip epique">Épique 22%</span>
           <span class="odds-chip legendaire">Légendaire 12%</span>
           <span class="odds-chip mythique">Mythique 4%</span>
+          <span class="odds-chip goat">GOAT &lt;1%</span>
         </div>
       </div>
       <div class="packs-info">
@@ -897,6 +937,7 @@
       <div class="coll-filter-wrap">
         <div class="coll-filter">
           <button class="filter-btn active" onclick="filterColl('all', this)">Toutes</button>
+          <button class="filter-btn" onclick="filterColl('goat', this)">GOAT</button>
           <button class="filter-btn" onclick="filterColl('mythique', this)">Mythiques</button>
           <button class="filter-btn" onclick="filterColl('legendaire', this)">Légendaires</button>
           <button class="filter-btn" onclick="filterColl('epique', this)">Épiques</button>
@@ -932,6 +973,7 @@
                 <option value="epique">Épique</option>
                 <option value="legendaire">Légendaire</option>
                 <option value="mythique">Mythique</option>
+                <option value="goat">GOAT</option>
               </select>
             </div>
             <div class="form-row">
@@ -1311,16 +1353,17 @@ function weightedPick(pool, drawnNames) {
 
   // Tirage pondéré par rareté parmi les disponibles
   const by = {
+    goat:       available.filter(c => c.rarity === 'goat'),
     mythique:   available.filter(c => c.rarity === 'mythique'),
     legendaire: available.filter(c => c.rarity === 'legendaire'),
     epique:     available.filter(c => c.rarity === 'epique'),
     rare:       available.filter(c => c.rarity === 'rare')
   };
   const roll = Math.random() * 100;
-  let rarity = roll < 4 ? 'mythique' : roll < 16 ? 'legendaire' : roll < 38 ? 'epique' : 'rare';
+  let rarity = roll < 0.5 ? 'goat' : roll < 4.5 ? 'mythique' : roll < 16.5 ? 'legendaire' : roll < 38.5 ? 'epique' : 'rare';
   let bucket = by[rarity];
   if (!bucket || !bucket.length) {
-    for (const r of ['mythique', 'legendaire', 'epique', 'rare']) {
+    for (const r of ['goat', 'mythique', 'legendaire', 'epique', 'rare']) {
       if (by[r] && by[r].length) { bucket = by[r]; break; }
     }
   }
@@ -1407,8 +1450,9 @@ async function openPack() {
 
   document.getElementById('reveal-section').classList.add('visible');
 
+  const hasGoat = drawn.some(c => c.rarity === 'goat');
   const hasMythique = drawn.some(c => c.rarity === 'mythique');
-  showToast(hasMythique ? '\u2726 MYTHIQUE ! Incroyable !' : '\uD83C\uDCB4 Pack ouvert !');
+  showToast(hasGoat ? '👑 GOAT !!! T\u2019as le boss final !' : hasMythique ? '\u2726 MYTHIQUE ! Incroyable !' : '\uD83C\uDCB4 Pack ouvert !');
 
   packOpening = false;
 }
@@ -1428,8 +1472,8 @@ function makeCardEl(c, count) {
   if (c.id) div.dataset.cardId = c.id;
   div.onclick = () => openCardModal(c);
 
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique' };
-  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT' };
+  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '', goat: '👑' };
   const badge  = labels[c.rarity] || 'Rare';
   const star   = stars[c.rarity]  || '☆';
 
@@ -1445,7 +1489,8 @@ function makeCardEl(c, count) {
   // Particules mythique
   const starsHTML = '';
 
-  const mythBorder = c.rarity === 'mythique' ? '<div class="mythique-border"></div>' : '';
+  const mythBorder = c.rarity === 'mythique' ? '<div class="mythique-border"></div>'
+    : c.rarity === 'goat' ? '<div class="goat-border"></div>' : '';
 
   div.innerHTML = `
     ${count ? `<div class="card-count-badge">x${count}</div>` : ''}
@@ -1469,8 +1514,7 @@ function makeCardEl(c, count) {
 }
 
 // ─── CARD MODAL ───────────────────────────────────────────────────────────────
-function openCardModal(c, fromCollection) {
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT' };
 
   // Carte visuelle en grand
   const cardEl = makeCardEl(c);
@@ -1540,10 +1584,11 @@ let collFilter = 'all';
 
 function filterColl(f, btn) {
   collFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique', 'active-goat'));
   if (btn) {
     btn.classList.add('active');
     if (f === 'mythique') btn.classList.add('active-mythique');
+    if (f === 'goat') btn.classList.add('active-goat');
   }
   renderCollection();
 }
@@ -1565,6 +1610,7 @@ function renderCollection() {
   const epiques    = coll.filter(c => c.rarity === 'epique').length;
   const legendaires= coll.filter(c => c.rarity === 'legendaire').length;
   const mythiques  = coll.filter(c => c.rarity === 'mythique').length;
+  const goats      = coll.filter(c => c.rarity === 'goat').length;
 
   document.getElementById('coll-stats').innerHTML = `
     <div class="stat-chip"><span class="n">${total}</span><span class="lbl">Total</span></div>
@@ -1572,6 +1618,7 @@ function renderCollection() {
     <div class="stat-chip"><span class="n badge-epique">${epiques}</span><span class="lbl">Épiques</span></div>
     <div class="stat-chip"><span class="n badge-legendaire">${legendaires}</span><span class="lbl">Légendaires</span></div>
     <div class="stat-chip"><span class="n badge-mythique">${mythiques}</span><span class="lbl">Mythiques</span></div>
+    <div class="stat-chip"><span class="n badge-goat">${goats}</span><span class="lbl">GOAT</span></div>
   `;
 
   const grid = document.getElementById('coll-grid');
@@ -1581,7 +1628,7 @@ function renderCollection() {
     collFilter === 'all' || card.rarity === collFilter
   );
   filtered.sort((a, b) => {
-    const o = { mythique: 0, legendaire: 1, epique: 2, rare: 3 };
+    const o = { goat: -1, mythique: 0, legendaire: 1, epique: 2, rare: 3 };
     return (o[a.card.rarity] ?? 4) - (o[b.card.rarity] ?? 4);
   });
 
@@ -1880,6 +1927,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCardM
           <option value="epique">Épique</option>
           <option value="legendaire">Légendaire</option>
           <option value="mythique">Mythique</option>
+          <option value="goat">GOAT</option>
         </select>
       </div>
       <div class="form-row">
