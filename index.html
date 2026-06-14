@@ -1140,6 +1140,40 @@ let DB = { cards: [], users: {}, adminPass: 'admin123' };
 let syncTimeout = null;
 let isOffline = false;
 
+// ─── COMPRESSION IMAGE AVANT UPLOAD ────────────────────────────────────────
+// Redimensionne l'image (max 500x500) et la recompresse en JPEG qualité 70%
+// pour limiter le poids du base64 stocké dans Supabase.
+function compressImageFile(file, maxSize = 500, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Erreur lecture fichier'));
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Erreur lecture image'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round(height * (maxSize / width));
+            width  = maxSize;
+          } else {
+            width  = Math.round(width * (maxSize / height));
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function setSyncState(state) {
   const dot = document.getElementById('sync-dot');
   if (!dot) return;
@@ -1363,7 +1397,7 @@ function subscribeToCardChanges() {
       // Évite les doublons (ex: carte ajoutée par soi-même)
       if (!DB.cards.some(c => String(c.id) === String(card.id))) {
         DB.cards.push(card);
-        showToast('🆕 Nouvelle carte ajoutée au pool : "' + card.name + '" !');
+        showToast('🆕 Nouvelle carte ajoutée au pool !');
       }
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cards' }, payload => {
@@ -1870,14 +1904,14 @@ async function addCard() {
   };
 
   if (imgFile) {
-    const r    = new FileReader();
-    r.onload   = e => finalize(e.target.result);
-    r.onerror  = () => {
+    try {
+      const compressed = await compressImageFile(imgFile);
+      await finalize(compressed);
+    } catch (err) {
       showToast('Erreur lecture image');
       btn.disabled    = false;
       btn.textContent = 'Ajouter la carte';
-    };
-    r.readAsDataURL(imgFile);
+    }
   } else {
     await finalize(null);
   }
@@ -1961,14 +1995,14 @@ async function createCardByUser() {
   };
 
   if (imgFile) {
-    const r    = new FileReader();
-    r.onload   = e => finalize(e.target.result);
-    r.onerror  = () => {
+    try {
+      const compressed = await compressImageFile(imgFile);
+      await finalize(compressed);
+    } catch (err) {
       showToast('Erreur lecture image');
       btn.disabled    = false;
       btn.textContent = 'Créer la carte';
-    };
-    r.readAsDataURL(imgFile);
+    }
   } else {
     await finalize(null);
   }
@@ -2128,10 +2162,14 @@ async function saveEditCard() {
 
   const imgFile = document.getElementById('e-image').files[0];
   if (imgFile) {
-    const r = new FileReader();
-    r.onload = e => finalize(e.target.result);
-    r.onerror = () => { showToast('Erreur lecture image'); btn.disabled = false; btn.textContent = 'Enregistrer les modifications'; };
-    r.readAsDataURL(imgFile);
+    try {
+      const compressed = await compressImageFile(imgFile);
+      await finalize(compressed);
+    } catch (err) {
+      showToast('Erreur lecture image');
+      btn.disabled = false;
+      btn.textContent = 'Enregistrer les modifications';
+    }
   } else {
     await finalize(null); // null = garder l'image actuelle
   }
