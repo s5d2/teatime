@@ -1345,6 +1345,51 @@ async function init() {
 
 init();
 
+// ─── TEMPS RÉEL : nouvelles cartes ajoutées au pool en direct ──────────────
+function subscribeToCardChanges() {
+  sb.channel('cards-realtime')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cards' }, payload => {
+      const r = payload.new;
+      const card = {
+        id:       r.id,
+        name:     r.name,
+        role:     r.role        || '',
+        desc:     r.description || '',
+        rarity:   r.rarity      || 'rare',
+        initials: r.initials    || '',
+        power:    r.power       || '',
+        image:    r.image_url   || null
+      };
+      // Évite les doublons (ex: carte ajoutée par soi-même)
+      if (!DB.cards.some(c => String(c.id) === String(card.id))) {
+        DB.cards.push(card);
+        showToast('🆕 Nouvelle carte ajoutée au pool : "' + card.name + '" !');
+      }
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cards' }, payload => {
+      const r = payload.new;
+      const idx = DB.cards.findIndex(c => String(c.id) === String(r.id));
+      if (idx !== -1) {
+        DB.cards[idx] = {
+          id:       r.id,
+          name:     r.name,
+          role:     r.role        || '',
+          desc:     r.description || '',
+          rarity:   r.rarity      || 'rare',
+          initials: r.initials    || '',
+          power:    r.power       || '',
+          image:    r.image_url   || null
+        };
+      }
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'cards' }, payload => {
+      const oldId = payload.old?.id;
+      DB.cards = DB.cards.filter(c => String(c.id) !== String(oldId));
+    })
+    .subscribe();
+}
+subscribeToCardChanges();
+
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 let currentUser = null, isAdmin = false, timerInterval = null, createCooldownInterval = null;
 
