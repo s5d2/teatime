@@ -1052,7 +1052,7 @@
             <input type="text" id="c-power" placeholder="Ex : +10 Rage, Clutch ultime..." />
           </div>
           <button class="btn-primary" id="create-card-btn" onclick="createCardByUser()">Créer la carte</button>
-          <p style="font-size:11px; color:var(--muted); margin-top:10px;">Une fois créée, ta carte rejoint le pool et peut sortir dans les packs de tout le monde (y compris les tiens). Tu peux en créer une nouvelle toutes les 24h.</p>
+          <p style="font-size:11px; color:var(--muted); margin-top:10px;">Une fois créée, ta carte rejoint le pool et peut sortir dans les packs de tout le monde (y compris les tiens). Création illimitée.</p>
         </div>
       </div>
     </div>
@@ -1838,18 +1838,13 @@ async function addCard() {
   }
 }
 
-// ─── CRÉER : COOLDOWN 24H PAR UTILISATEUR (stocké côté serveur) ─────────────
-const CREATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-
+// ─── CRÉER : COOLDOWN DÉSACTIVÉ (création illimitée) ────────────────────────
 function getCreateCooldownEnd() {
-  const ud = getUserData(currentUser);
-  return ud.lastCardCreation ? ud.lastCardCreation + CREATE_COOLDOWN_MS : null;
+  return null;
 }
 
 function setCreateCooldownNow() {
-  const ud = getUserData(currentUser);
-  ud.lastCardCreation = Date.now();
-  saveUserData(currentUser, ud);
+  // Plus de cooldown : ne fait rien
 }
 
 function initCreatePage() {
@@ -1857,36 +1852,13 @@ function initCreatePage() {
 }
 
 function updateCreateCooldownUI() {
-  const end  = getCreateCooldownEnd();
   const msg  = document.getElementById('create-cooldown-msg');
   const btn  = document.getElementById('create-card-btn');
   if (createCooldownInterval) { clearInterval(createCooldownInterval); createCooldownInterval = null; }
 
-  if (end && Date.now() < end) {
-    msg.style.display = '';
-    btn.disabled = true;
-    btn.textContent = 'En cooldown...';
-    const tick = () => {
-      const left = Math.max(0, end - Date.now());
-      if (left <= 0) {
-        clearInterval(createCooldownInterval);
-        createCooldownInterval = null;
-        updateCreateCooldownUI();
-        return;
-      }
-      const h = Math.floor(left / 3600000);
-      const m = Math.floor((left % 3600000) / 60000);
-      const s = Math.floor((left % 60000) / 1000);
-      document.getElementById('create-cooldown-timer').textContent =
-        String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    };
-    tick();
-    createCooldownInterval = setInterval(tick, 1000);
-  } else {
-    msg.style.display = 'none';
-    btn.disabled = false;
-    btn.textContent = 'Créer la carte';
-  }
+  msg.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = 'Créer la carte';
 }
 
 // ─── CRÉER : AJOUT PAR UN UTILISATEUR ───────────────────────────────────────
@@ -1940,8 +1912,6 @@ async function createCardByUser() {
     document.getElementById('c-img-preview-text').style.display = '';
     document.getElementById('c-rarity').value = 'rare';
 
-    // Active le cooldown 24h
-    setCreateCooldownNow();
     updateCreateCooldownUI();
   };
 
