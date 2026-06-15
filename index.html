@@ -585,6 +585,18 @@
   .stat-chip .n.badge-hess { color: var(--hess); }
 
   .coll-filter-wrap { margin-bottom: 1.25rem; }
+  .coll-search {
+    width: 100%; padding: 10px 16px 10px 40px;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-size: 14px; font-family: 'Inter', sans-serif;
+    margin-bottom: 10px; transition: border-color 0.2s;
+    outline: none;
+  }
+  .coll-search:focus { border-color: rgba(255,255,255,0.25); }
+  .coll-search::placeholder { color: var(--muted); }
+  .coll-search-wrap { position: relative; }
+  .coll-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; pointer-events: none; }
   .coll-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px; display: inline-flex; gap: 4px; flex-wrap: wrap; }
   .filter-btn { font-size: 12px; padding: 5px 14px; border-radius: 999px; background: transparent; border: 1px solid transparent; color: var(--muted); font-weight: 500; transition: all 0.15s; }
   .filter-btn:hover { background: var(--surface2); color: var(--text); }
@@ -1030,6 +1042,10 @@
       <div class="section-title">Ma collection</div>
       <div class="coll-stats" id="coll-stats"></div>
       <div class="coll-filter-wrap">
+        <div class="coll-search-wrap">
+          <span class="coll-search-icon">🔍</span>
+          <input class="coll-search" id="coll-search" type="text" placeholder="Rechercher une carte..." oninput="renderCollection()" />
+        </div>
         <div class="coll-filter">
           <button class="filter-btn active" onclick="filterColl('all', this)">Toutes</button>
           <button class="filter-btn" onclick="filterColl('goat', this)">GOAT</button>
@@ -1153,12 +1169,6 @@
             <div class="no-cards-msg">Aucune carte pour l'instant.</div>
           </div>
           <hr class="section-sep">
-          <div class="panel-title" style="margin-bottom:8px">Code Secret</div>
-          <div class="form-row" style="margin-bottom:10px">
-            <input type="text" id="new-secret-code" placeholder="Nouveau code secret" />
-          </div>
-          <button onclick="changeSecretCode()" style="width:100%">Changer le code</button>
-          <hr class="section-sep">
           <div class="panel-title" style="margin-bottom:8px">Mot de passe admin</div>
           <div class="form-row" style="margin-bottom:10px">
             <input type="password" id="new-admin-pass" placeholder="Nouveau mot de passe" />
@@ -1184,7 +1194,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //   users  : { username (PK), collection, packs_left, timer_end, admin_pass_hash }
 // La table "settings" (une seule ligne) stocke le mot de passe admin.
 //   settings : { id (=1), admin_pass }
-let DB = { cards: [], users: {}, adminPass: 'admin123', secretCode: 'Chipie' };
+let DB = { cards: [], users: {}, adminPass: 'admin123' };
 let syncTimeout = null;
 let isOffline = false;
 
@@ -1237,7 +1247,7 @@ async function loadDB(attempt = 1) {
     // On charge d'abord sans les images (très léger), puis les images en arrière-plan
     const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,image_url,created_at').order('created_at', { ascending: true });
     const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection,last_card_creation');
-    const settingsRes = await sb.from('settings').select('admin_pass,secret_code').eq('id', 1).maybeSingle();
+    const settingsRes = await sb.from('settings').select('admin_pass').eq('id', 1).maybeSingle();
 
     if (cardsRes.error)    throw cardsRes.error;
     if (usersRes.error)    throw usersRes.error;
@@ -1277,7 +1287,6 @@ async function loadDB(attempt = 1) {
 
     // Mot de passe admin
     DB.adminPass  = settingsRes.data?.admin_pass  || 'admin123';
-    DB.secretCode = settingsRes.data?.secret_code || 'Chipie';
 
     setSyncState('ok');
     isOffline = false;
@@ -1390,24 +1399,11 @@ async function persistAdminPass(pass) {
   }
 }
 
-async function persistSecretCode(code) {
-  if (isOffline) return;
-  setSyncState('syncing');
-  try {
-    const { error } = await sb.from('settings').upsert({ id: 1, secret_code: code }, { onConflict: 'id' });
-    if (error) throw error;
-    setSyncState('ok');
-  } catch(e) {
-    setSyncState('error');
-    console.error('persistSecretCode error:', e.message);
-  }
-}
-
 // ─── HELPERS DB (interface identique à l'ancienne version) ───────────────────
 function getCards() { return DB.cards || []; }
 
 function getAdminPass() { return DB.adminPass || 'admin123'; }
-function getSecretCode() { return DB.secretCode || 'Chipie'; }
+const SECRET_CODE = 'chipie';
 
 function getUserData(n) {
   if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 2, timerEnd: null, lastCardCreation: null };
@@ -1507,7 +1503,7 @@ async function doLogin() {
   // Refresh DB pour avoir le code secret à jour
   await loadDB();
 
-  if (secret !== getSecretCode()) { err.textContent = 'Code secret incorrect.'; return; }
+  if (secret !== SECRET_CODE) { err.textContent = 'Code secret incorrect.'; return; }
   if (pass && pass !== getAdminPass()) { err.textContent = 'Mauvais mot de passe admin.'; return; }
   err.textContent = '';
   isAdmin     = pass !== '' && pass === getAdminPass();
@@ -1890,16 +1886,26 @@ function renderCollection() {
   const grid = document.getElementById('coll-grid');
   grid.innerHTML = '';
 
-  const filtered = Object.values(counts).filter(({ card }) =>
-    collFilter === 'all' || card.rarity === collFilter
-  );
+  const searchEl = document.getElementById('coll-search');
+  const search = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  const filtered = Object.values(counts).filter(({ card }) => {
+    const matchFilter = collFilter === 'all' || card.rarity === collFilter;
+    const matchSearch = !search ||
+      (card.name  || '').toLowerCase().includes(search) ||
+      (card.role  || '').toLowerCase().includes(search) ||
+      (card.desc  || '').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
   filtered.sort((a, b) => {
     const o = { goat: -1, mythique: 0, legendaire: 1, epique: 2, rare: 3, hess: 4 };
     return (o[a.card.rarity] ?? 4) - (o[b.card.rarity] ?? 4);
   });
 
   if (!filtered.length) {
-    grid.innerHTML = '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>';
+    grid.innerHTML = search
+      ? `<div class="coll-empty">Aucune carte pour "<strong>${search}</strong>"</div>`
+      : '<div class="coll-empty">Aucune carte ici.<br>Ouvre des packs !</div>';
     return;
   }
   filtered.forEach(({ card, n }) => {
@@ -2134,16 +2140,6 @@ async function changeAdminPass() {
   document.getElementById('new-admin-pass').value = '';
   showToast('Mot de passe changé !');
 }
-
-async function changeSecretCode() {
-  const nc = document.getElementById('new-secret-code').value.trim();
-  if (!nc) { showToast('Entre un code secret !'); return; }
-  DB.secretCode = nc;
-  await persistSecretCode(nc);
-  document.getElementById('new-secret-code').value = '';
-  showToast('Code secret changé en : ' + nc);
-}
-
 
 // ─── ADMIN : MODIFIER CARTE ──────────────────────────────────────────────────
 let editingCardId = null;
