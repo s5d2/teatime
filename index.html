@@ -6,7 +6,7 @@
 <title>TeaMasters</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Inter:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Inter:wght@400;500&family=Anton&display=swap');
 
   :root {
     --bg: #080810;
@@ -22,6 +22,7 @@
     --legendaire: #ffb830;
     --mythique: #ff2d55;
     --goat: #39ff6a;
+    --hess: #8a8a9a;
     --radius: 16px;
     --radius-sm: 10px;
     --radius-xs: 6px;
@@ -222,6 +223,13 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-logo {
+    flex-shrink: 0;
+    display: block;
   }
   .nav-right { display: flex; align-items: center; gap: 10px; }
   .nav-tabs { display: flex; gap: 2px; }
@@ -248,6 +256,7 @@
   .odds-chip.legendaire { background: rgba(255,184,48,0.1); color: #ffd070; border-color: rgba(255,184,48,0.25); }
   .odds-chip.mythique { background: rgba(255,45,85,0.1); color: #ff8099; border-color: rgba(255,45,85,0.3); }
   .odds-chip.goat { background: rgba(57,255,106,0.1); color: #7dffa0; border-color: rgba(57,255,106,0.35); }
+  .odds-chip.hess { background: rgba(138,138,154,0.1); color: #b0b0c4; border-color: rgba(138,138,154,0.25); }
 
   .packs-info { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 1.5rem 0; flex-wrap: wrap; }
   .info-chip { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 7px 16px; font-size: 13px; color: var(--muted); }
@@ -326,12 +335,14 @@
   .card.legendaire { border-color: rgba(255,184,48,0.65); box-shadow: 0 6px 28px rgba(255,184,48,0.25); }
   .card.mythique   { border-color: transparent; box-shadow: 0 6px 28px rgba(255,45,85,0.3); }
   .card.goat       { border-color: transparent; box-shadow: 0 6px 32px rgba(57,255,106,0.4); }
+  .card.hess       { border-color: rgba(138,138,154,0.35); box-shadow: 0 4px 16px rgba(138,138,154,0.12); }
 
   .card.rare:hover    { box-shadow: 0 14px 48px rgba(74,158,255,0.4); }
   .card.epique:hover  { box-shadow: 0 14px 48px rgba(176,107,255,0.45); }
   .card.legendaire:hover { box-shadow: 0 14px 52px rgba(255,184,48,0.5); }
   .card.mythique:hover   { box-shadow: 0 14px 56px rgba(255,45,85,0.6); transform: translateY(-10px) scale(1.04); }
   .card.goat:hover       { box-shadow: 0 0 40px rgba(57,255,106,0.85), 0 14px 60px rgba(57,255,106,0.5); transform: translateY(-10px) scale(1.04); }
+  .card.hess:hover       { box-shadow: 0 8px 28px rgba(138,138,154,0.25); }
 
   /* Bordure animée mythique */
   .mythique-border {
@@ -362,6 +373,13 @@
   @keyframes goatGlow {
     0%, 100% { box-shadow: 0 0 18px rgba(57,255,106,0.55), 0 6px 28px rgba(57,255,106,0.3); }
     50%      { box-shadow: 0 0 38px rgba(57,255,106,0.95), 0 6px 40px rgba(57,255,106,0.6); }
+  }
+  .card.mythique {
+    animation: mythiqueGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes mythiqueGlow {
+    0%, 100% { box-shadow: 0 0 16px rgba(255,45,85,0.5), 0 6px 26px rgba(255,45,85,0.25); }
+    50%      { box-shadow: 0 0 36px rgba(255,45,85,0.9), 0 6px 38px rgba(255,45,85,0.55); }
   }
 
   /* ── Effet holographique (style carte Pokémon) au survol ── */
@@ -439,6 +457,7 @@
   .card.legendaire .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a1500); }
   .card.mythique  .card-photo-fade { background: linear-gradient(to bottom, transparent, #2a0515); }
   .card.goat      .card-photo-fade { background: linear-gradient(to bottom, transparent, #04230f); }
+  .card.hess      .card-photo-fade { background: linear-gradient(to bottom, transparent, #141420); }
 
   /* fond coloré de la zone photo selon rareté */
   .card.rare      .card-photo { background: linear-gradient(160deg, #0d2855, #071a45); }
@@ -446,6 +465,7 @@
   .card.legendaire .card-photo { background: linear-gradient(160deg, #3a1e00, #1a0c00); }
   .card.mythique  .card-photo { background: linear-gradient(160deg, #2a0515, #0d0108); }
   .card.goat      .card-photo { background: linear-gradient(160deg, #08431f, #021a0c); }
+  .card.hess      .card-photo { background: linear-gradient(160deg, #1e1e2a, #141420); }
 
   /* ── Badge rareté + étoile en overlay sur la photo ── */
   .card-top {
@@ -454,8 +474,8 @@
     padding: 9px 10px; z-index: 5;
   }
   .rarity-badge {
-    font-size: 9px; font-weight: 800; font-family: 'Syne', sans-serif;
-    letter-spacing: 1px; text-transform: uppercase;
+    font-size: 10px; font-weight: 400; font-family: 'Anton', sans-serif;
+    letter-spacing: 1.5px; text-transform: uppercase;
     padding: 3px 8px; border-radius: 999px; border: 1px solid transparent;
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
@@ -464,6 +484,7 @@
   .card.legendaire .rarity-badge { background: rgba(40,20,0,0.75); color: #ffe090; border-color: rgba(255,184,48,0.6); }
   .card.mythique  .rarity-badge { background: rgba(40,0,15,0.75);  color: #ffb0c0; border-color: rgba(255,45,85,0.6); }
   .card.goat      .rarity-badge { background: rgba(2,30,15,0.75); color: #9bffba; border-color: rgba(57,255,106,0.7); box-shadow: 0 0 10px rgba(57,255,106,0.6); }
+  .card.hess      .rarity-badge { background: rgba(20,20,32,0.8); color: #b0b0c4; border-color: rgba(138,138,154,0.4); }
 
   .card-star {
     font-size: 16px; line-height: 1; color: rgba(255,255,255,0.8);
@@ -487,6 +508,7 @@
   .card.legendaire .card-body { background: linear-gradient(170deg, #2a1500 0%, #110800 100%); }
   .card.mythique  .card-body { background: linear-gradient(170deg, #2a0515 0%, #0d0108 100%); }
   .card.goat      .card-body { background: linear-gradient(170deg, #08431f 0%, #021a0c 100%); }
+  .card.hess      .card-body { background: linear-gradient(170deg, #1e1e2a 0%, #141420 100%); }
 
   /* reflet lumineux en haut du body */
   .card-body::before {
@@ -498,10 +520,12 @@
   .card.legendaire .card-body::before { background: linear-gradient(to bottom, rgba(255,184,48,0.25), transparent); }
   .card.mythique  .card-body::before { background: linear-gradient(to bottom, rgba(255,45,85,0.22), transparent); }
   .card.goat      .card-body::before { background: linear-gradient(to bottom, rgba(57,255,106,0.3), transparent); }
+  .card.hess      .card-body::before { background: linear-gradient(to bottom, rgba(138,138,154,0.1), transparent); }
 
   .card-name {
-    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800;
-    color: #fff; line-height: 1.2; margin-bottom: 4px; position: relative; z-index: 1;
+    font-family: 'Anton', sans-serif; font-size: 16px; font-weight: 400;
+    color: #fff; line-height: 1.15; margin-bottom: 4px; position: relative; z-index: 1;
+    letter-spacing: 0.3px;
   }
   .card.mythique .card-name { text-shadow: 0 0 10px rgba(255,45,85,0.5); }
   .card.goat .card-name { text-shadow: 0 0 12px rgba(57,255,106,0.8); }
@@ -527,6 +551,7 @@
   .card.legendaire .card-stats { background: rgba(17,8,0,0.9); }
   .card.mythique  .card-stats { background: rgba(13,1,8,0.9); }
   .card.goat      .card-stats { background: rgba(2,26,12,0.9); }
+  .card.hess      .card-stats { background: rgba(18,18,28,0.9); }
 
   .card-stat {
     display: flex; align-items: center; gap: 4px;
@@ -537,6 +562,7 @@
   .card.legendaire .card-stat { color: #ffe99a; }
   .card.mythique   .card-stat { color: #ff9aaa; }
   .card.goat       .card-stat { color: #9bffba; }
+  .card.hess       .card-stat { color: #9090a8; }
 
   .card-count-badge {
     position: absolute; top: 36px; left: 8px;
@@ -556,6 +582,7 @@
   .stat-chip .n.badge-legendaire { color: var(--legendaire); }
   .stat-chip .n.badge-mythique { color: var(--mythique); }
   .stat-chip .n.badge-goat { color: var(--goat); text-shadow: 0 0 8px rgba(57,255,106,0.6); }
+  .stat-chip .n.badge-hess { color: var(--hess); }
 
   .coll-filter-wrap { margin-bottom: 1.25rem; }
   .coll-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px; display: inline-flex; gap: 4px; flex-wrap: wrap; }
@@ -564,6 +591,7 @@
   .filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
   .filter-btn.active-mythique { background: rgba(255,45,85,0.12); color: var(--mythique); border-color: rgba(255,45,85,0.35); }
   .filter-btn.active-goat { background: rgba(57,255,106,0.14); color: var(--goat); border-color: rgba(57,255,106,0.5); box-shadow: 0 0 10px rgba(57,255,106,0.35); }
+  .filter-btn.active-hess { background: rgba(138,138,154,0.1); color: var(--hess); border-color: rgba(138,138,154,0.35); }
 
   .coll-grid { display: flex; flex-wrap: wrap; gap: 16px; }
   .coll-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 4rem 0; grid-column: 1/-1; line-height: 2; }
@@ -590,6 +618,7 @@
   .admin-avatar.legendaire { background: rgba(255,184,48,0.12); color: #ffd070; border-color: rgba(255,184,48,0.3); }
   .admin-avatar.mythique { background: rgba(255,45,85,0.12); color: #ff8099; border-color: rgba(255,45,85,0.35); }
   .admin-avatar.goat { background: rgba(57,255,106,0.14); color: #9bffba; border-color: rgba(57,255,106,0.5); box-shadow: 0 0 8px rgba(57,255,106,0.4); }
+  .admin-avatar.hess { background: rgba(138,138,154,0.1); color: #b0b0c4; border-color: rgba(138,138,154,0.3); }
 
   .admin-card-info { flex: 1; min-width: 0; }
   .admin-card-name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -601,6 +630,7 @@
   .rarity-dot.legendaire { background: var(--legendaire); box-shadow: 0 0 4px var(--legendaire); }
   .rarity-dot.mythique { background: var(--mythique); box-shadow: 0 0 6px var(--mythique); animation: dotPulse 2s ease-in-out infinite; }
   .rarity-dot.goat { background: var(--goat); box-shadow: 0 0 8px var(--goat); animation: dotPulse 1.2s ease-in-out infinite; }
+  .rarity-dot.hess { background: var(--hess); }
   @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
   .btn-icon { background: transparent; border: none; color: var(--muted); padding: 4px 6px; font-size: 14px; line-height: 1; border-radius: 4px; }
@@ -616,6 +646,7 @@
   .badge-legendaire { color: var(--legendaire); }
   .badge-mythique { color: var(--mythique); font-weight: 600; }
   .badge-goat { color: var(--goat); font-weight: 700; text-shadow: 0 0 6px rgba(57,255,106,0.6); }
+  .badge-hess { color: var(--hess); font-weight: 500; }
 
   .section-sep { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
   .no-cards-msg { font-size: 13px; color: var(--muted); text-align: center; padding: 1.5rem 0; }
@@ -725,6 +756,7 @@
   .card-modal-rarity.legendaire { background: rgba(255,184,48,0.15); color: #ffe090; border-color: rgba(255,184,48,0.5); }
   .card-modal-rarity.mythique { background: linear-gradient(135deg, rgba(255,45,85,0.2), rgba(255,107,53,0.2)); color: #ffb0c0; border-color: rgba(255,45,85,0.5); }
   .card-modal-rarity.goat { background: linear-gradient(135deg, rgba(57,255,106,0.25), rgba(0,255,150,0.18)); color: #b6ffce; border-color: rgba(57,255,106,0.6); box-shadow: 0 0 12px rgba(57,255,106,0.4); }
+  .card-modal-rarity.hess { background: rgba(138,138,154,0.1); color: #b0b0c4; border-color: rgba(138,138,154,0.35); }
   .card-modal-name {
     font-family: 'Syne', sans-serif;
     font-size: 28px;
@@ -920,12 +952,16 @@
       ⚠️ Mode hors-ligne — la progression ne sera pas sauvegardée
     </div>
     <div class="form-row">
-      <label class="form-label">Ton pseudo</label>
+      <label class="form-label">Pseudo</label>
       <input type="text" id="login-name" placeholder="Ex : Kévin, Sarah..." />
+    </div>
+    <div class="form-row">
+      <label class="form-label">Code Secret</label>
+      <input type="password" id="login-secret" placeholder="•••••••" />
     </div>
     <div class="admin-pass-row" id="admin-pass-row">
       <label class="form-label">Mot de passe admin</label>
-      <input type="password" id="login-pass" placeholder="Mot de passe" />
+      <input type="password" id="login-pass" placeholder="Mot de passe admin" />
     </div>
     <div class="error-msg" id="login-error"></div>
     <button class="btn-primary" onclick="doLogin()">Entrer dans le jeu</button>
@@ -936,7 +972,9 @@
 <!-- APP -->
 <div id="screen-app" class="screen">
   <nav>
-    <div class="nav-brand">TeaMasters</div>
+    <div class="nav-brand">
+      <span>TeaMasters</span>
+    </div>
     <div class="nav-tabs" id="nav-tabs">
       <button class="nav-tab active" onclick="showPage('packs', this)">Packs</button>
       <button class="nav-tab" onclick="showPage('collection', this)">Collection</button>
@@ -961,6 +999,7 @@
         <p>3 cartes par pack · Rare, Épique, Légendaire ou Mythique</p>
         <div class="odds-row">
           <span class="odds-chip rare">Rare 62%</span>
+          <span class="odds-chip hess">Hess 20%</span>
           <span class="odds-chip epique">Épique 22%</span>
           <span class="odds-chip legendaire">Légendaire 12%</span>
           <span class="odds-chip mythique">Mythique 4%</span>
@@ -998,6 +1037,7 @@
           <button class="filter-btn" onclick="filterColl('legendaire', this)">Légendaires</button>
           <button class="filter-btn" onclick="filterColl('epique', this)">Épiques</button>
           <button class="filter-btn" onclick="filterColl('rare', this)">Rares</button>
+          <button class="filter-btn" onclick="filterColl('hess', this)">Hess</button>
         </div>
       </div>
       <div class="coll-grid" id="coll-grid"></div>
@@ -1028,6 +1068,7 @@
             <div class="form-row">
               <label class="form-label">Rareté</label>
               <select id="c-rarity">
+                <option value="hess">Hess</option>
                 <option value="rare">Rare</option>
                 <option value="epique">Épique</option>
                 <option value="legendaire">Légendaire</option>
@@ -1080,6 +1121,7 @@
             <div class="form-row">
               <label class="form-label">Rareté</label>
               <select id="a-rarity">
+                <option value="hess">Hess</option>
                 <option value="rare">Rare</option>
                 <option value="epique">Épique</option>
                 <option value="legendaire">Légendaire</option>
@@ -1111,6 +1153,12 @@
             <div class="no-cards-msg">Aucune carte pour l'instant.</div>
           </div>
           <hr class="section-sep">
+          <div class="panel-title" style="margin-bottom:8px">Code Secret</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <input type="text" id="new-secret-code" placeholder="Nouveau code secret" />
+          </div>
+          <button onclick="changeSecretCode()" style="width:100%">Changer le code</button>
+          <hr class="section-sep">
           <div class="panel-title" style="margin-bottom:8px">Mot de passe admin</div>
           <div class="form-row" style="margin-bottom:10px">
             <input type="password" id="new-admin-pass" placeholder="Nouveau mot de passe" />
@@ -1136,7 +1184,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //   users  : { username (PK), collection, packs_left, timer_end, admin_pass_hash }
 // La table "settings" (une seule ligne) stocke le mot de passe admin.
 //   settings : { id (=1), admin_pass }
-let DB = { cards: [], users: {}, adminPass: 'admin123' };
+let DB = { cards: [], users: {}, adminPass: 'admin123', secretCode: 'Chipie' };
 let syncTimeout = null;
 let isOffline = false;
 
@@ -1189,7 +1237,7 @@ async function loadDB(attempt = 1) {
     // On charge d'abord sans les images (très léger), puis les images en arrière-plan
     const cardsRes    = await sb.from('cards').select('id,name,role,description,rarity,initials,power,image_url,created_at').order('created_at', { ascending: true });
     const usersRes    = await sb.from('users').select('username,packs_left,timer_end,collection,last_card_creation');
-    const settingsRes = await sb.from('settings').select('admin_pass').eq('id', 1).maybeSingle();
+    const settingsRes = await sb.from('settings').select('admin_pass,secret_code').eq('id', 1).maybeSingle();
 
     if (cardsRes.error)    throw cardsRes.error;
     if (usersRes.error)    throw usersRes.error;
@@ -1228,7 +1276,8 @@ async function loadDB(attempt = 1) {
     });
 
     // Mot de passe admin
-    DB.adminPass = settingsRes.data?.admin_pass || 'admin123';
+    DB.adminPass  = settingsRes.data?.admin_pass  || 'admin123';
+    DB.secretCode = settingsRes.data?.secret_code || 'Chipie';
 
     setSyncState('ok');
     isOffline = false;
@@ -1341,10 +1390,24 @@ async function persistAdminPass(pass) {
   }
 }
 
+async function persistSecretCode(code) {
+  if (isOffline) return;
+  setSyncState('syncing');
+  try {
+    const { error } = await sb.from('settings').upsert({ id: 1, secret_code: code }, { onConflict: 'id' });
+    if (error) throw error;
+    setSyncState('ok');
+  } catch(e) {
+    setSyncState('error');
+    console.error('persistSecretCode error:', e.message);
+  }
+}
+
 // ─── HELPERS DB (interface identique à l'ancienne version) ───────────────────
 function getCards() { return DB.cards || []; }
 
 function getAdminPass() { return DB.adminPass || 'admin123'; }
+function getSecretCode() { return DB.secretCode || 'Chipie'; }
 
 function getUserData(n) {
   if (!DB.users[n]) DB.users[n] = { collection: [], packsLeft: 2, timerEnd: null, lastCardCreation: null };
@@ -1434,17 +1497,21 @@ function toggleAdminPass() {
 }
 
 async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  const pass = document.getElementById('login-pass').value;
-  const err  = document.getElementById('login-error');
-  if (!name) { err.textContent = 'Entre ton pseudo !'; return; }
+  const name   = document.getElementById('login-name').value.trim();
+  const secret = document.getElementById('login-secret').value;
+  const pass   = document.getElementById('login-pass').value;
+  const err    = document.getElementById('login-error');
+  if (!name)   { err.textContent = 'Entre ton pseudo !'; return; }
+  if (!secret) { err.textContent = 'Entre le code secret !'; return; }
+
+  // Refresh DB pour avoir le code secret à jour
+  await loadDB();
+
+  if (secret !== getSecretCode()) { err.textContent = 'Code secret incorrect.'; return; }
   if (pass && pass !== getAdminPass()) { err.textContent = 'Mauvais mot de passe admin.'; return; }
   err.textContent = '';
   isAdmin     = pass !== '' && pass === getAdminPass();
   currentUser = name;
-
-  // Refresh DB avant d'entrer
-  await loadDB();
 
   showScreen('app');
   document.getElementById('nav-user').textContent = name;
@@ -1462,8 +1529,9 @@ function logout() {
   showScreen('login');
   document.getElementById('admin-tab').style.display = 'none';
   document.getElementById('admin-pass-row').classList.remove('visible');
-  document.getElementById('login-pass').value  = '';
-  document.getElementById('login-name').value  = '';
+  document.getElementById('login-pass').value   = '';
+  document.getElementById('login-name').value   = '';
+  document.getElementById('login-secret').value = '';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-packs').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -1550,13 +1618,14 @@ function weightedPick(pool, drawnNames) {
     mythique:   available.filter(c => c.rarity === 'mythique'),
     legendaire: available.filter(c => c.rarity === 'legendaire'),
     epique:     available.filter(c => c.rarity === 'epique'),
-    rare:       available.filter(c => c.rarity === 'rare')
+    rare:       available.filter(c => c.rarity === 'rare'),
+    hess:       available.filter(c => c.rarity === 'hess')
   };
   const roll = Math.random() * 100;
-  let rarity = roll < 0.5 ? 'goat' : roll < 4.5 ? 'mythique' : roll < 16.5 ? 'legendaire' : roll < 38.5 ? 'epique' : 'rare';
+  let rarity = roll < 0.5 ? 'goat' : roll < 4.5 ? 'mythique' : roll < 16.5 ? 'legendaire' : roll < 38.5 ? 'epique' : roll < 58.5 ? 'rare' : 'hess';
   let bucket = by[rarity];
   if (!bucket || !bucket.length) {
-    for (const r of ['goat', 'mythique', 'legendaire', 'epique', 'rare']) {
+    for (const r of ['goat', 'mythique', 'legendaire', 'epique', 'rare', 'hess']) {
       if (by[r] && by[r].length) { bucket = by[r]; break; }
     }
   }
@@ -1665,8 +1734,8 @@ function makeCardEl(c, count) {
   if (c.id) div.dataset.cardId = c.id;
   div.onclick = () => openCardModal(c);
 
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT' };
-  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '', goat: '👑' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT', hess: 'Hess' };
+  const stars  = { legendaire: '★★', epique: '★', rare: '☆', mythique: '', goat: '👑', hess: '' };
   const badge  = labels[c.rarity] || 'Rare';
   const star   = stars[c.rarity]  || '☆';
 
@@ -1708,7 +1777,7 @@ function makeCardEl(c, count) {
 
 // ─── CARD MODAL ───────────────────────────────────────────────────────────────
 function openCardModal(c, fromCollection) {
-  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT' };
+  const labels = { legendaire: 'Légendaire', epique: 'Épique', rare: 'Rare', mythique: 'Mythique', goat: 'GOAT', hess: 'Hess' };
 
   // Carte visuelle en grand
   const cardEl = makeCardEl(c);
@@ -1778,11 +1847,12 @@ let collFilter = 'all';
 
 function filterColl(f, btn) {
   collFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique', 'active-goat'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'active-mythique', 'active-goat', 'active-hess'));
   if (btn) {
     btn.classList.add('active');
     if (f === 'mythique') btn.classList.add('active-mythique');
     if (f === 'goat') btn.classList.add('active-goat');
+    if (f === 'hess') btn.classList.add('active-hess');
   }
   renderCollection();
 }
@@ -1800,6 +1870,7 @@ function renderCollection() {
   });
 
   const total      = coll.length;
+  const hess_      = coll.filter(c => c.rarity === 'hess').length;
   const rares      = coll.filter(c => c.rarity === 'rare').length;
   const epiques    = coll.filter(c => c.rarity === 'epique').length;
   const legendaires= coll.filter(c => c.rarity === 'legendaire').length;
@@ -1808,6 +1879,7 @@ function renderCollection() {
 
   document.getElementById('coll-stats').innerHTML = `
     <div class="stat-chip"><span class="n">${total}</span><span class="lbl">Total</span></div>
+    <div class="stat-chip"><span class="n badge-hess">${hess_}</span><span class="lbl">Hess</span></div>
     <div class="stat-chip"><span class="n badge-rare">${rares}</span><span class="lbl">Rares</span></div>
     <div class="stat-chip"><span class="n badge-epique">${epiques}</span><span class="lbl">Épiques</span></div>
     <div class="stat-chip"><span class="n badge-legendaire">${legendaires}</span><span class="lbl">Légendaires</span></div>
@@ -1822,7 +1894,7 @@ function renderCollection() {
     collFilter === 'all' || card.rarity === collFilter
   );
   filtered.sort((a, b) => {
-    const o = { goat: -1, mythique: 0, legendaire: 1, epique: 2, rare: 3 };
+    const o = { goat: -1, mythique: 0, legendaire: 1, epique: 2, rare: 3, hess: 4 };
     return (o[a.card.rarity] ?? 4) - (o[b.card.rarity] ?? 4);
   });
 
@@ -2030,7 +2102,8 @@ function renderAdminList() {
     legendaire: '<span class="badge-legendaire">Légendaire</span>',
     epique:     '<span class="badge-epique">Épique</span>',
     rare:       '<span class="badge-rare">Rare</span>',
-    mythique:   '<span class="badge-mythique">Mythique</span>'
+    mythique:   '<span class="badge-mythique">Mythique</span>',
+    hess:       '<span class="badge-hess">Hess</span>'
   };
   cards.forEach(c => {
     const div = document.createElement('div');
@@ -2060,6 +2133,15 @@ async function changeAdminPass() {
   await persistAdminPass(np);
   document.getElementById('new-admin-pass').value = '';
   showToast('Mot de passe changé !');
+}
+
+async function changeSecretCode() {
+  const nc = document.getElementById('new-secret-code').value.trim();
+  if (!nc) { showToast('Entre un code secret !'); return; }
+  DB.secretCode = nc;
+  await persistSecretCode(nc);
+  document.getElementById('new-secret-code').value = '';
+  showToast('Code secret changé en : ' + nc);
 }
 
 
@@ -2185,6 +2267,7 @@ function showToast(msg) {
 
 // ─── RACCOURCIS CLAVIER ──────────────────────────────────────────────────────
 document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-secret').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCardModal(null); closeEditModal(null); } });
 </script>
@@ -2212,6 +2295,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCardM
       <div class="form-row">
         <label class="form-label">Rareté</label>
         <select id="e-rarity">
+          <option value="hess">Hess</option>
           <option value="rare">Rare</option>
           <option value="epique">Épique</option>
           <option value="legendaire">Légendaire</option>
